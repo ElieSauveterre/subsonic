@@ -25,7 +25,8 @@ import org.springframework.web.bind.ServletRequestUtils;
 import org.springframework.web.servlet.ModelAndView;
 import org.springframework.web.servlet.mvc.AbstractController;
 import org.springframework.web.servlet.view.RedirectView;
-
+import net.sf.ehcache.Ehcache;
+import net.sf.ehcache.Element;
 import net.sourceforge.subsonic.domain.MediaFile;
 import net.sourceforge.subsonic.service.MediaFileService;
 import net.sourceforge.subsonic.service.RatingService;
@@ -42,16 +43,21 @@ public class SetRatingController extends AbstractController {
     private SecurityService securityService;
     private MediaFileService mediaFileService;
 
+	private MediaFileDao mediaFileDao;
+	private Ehcache mediaFileMemoryCache;
+
     protected ModelAndView handleRequestInternal(HttpServletRequest request, HttpServletResponse response) throws Exception {
         int id = ServletRequestUtils.getRequiredIntParameter(request, "id");
+		String path = request.getParameter("path");
         Integer rating = ServletRequestUtils.getIntParameter(request, "rating");
         if (rating == 0) {
             rating = null;
         }
+ 		MediaFile mediaFile = mediaFileService.getMediaFile(path);
+		mediaFileDao.starMediaFile(mediaFile.getId(), rating);
+		mediaFile.setRating(rating);
+		mediaFileMemoryCache.put(new Element(mediaFile.getFile(), mediaFile));
 
-        MediaFile mediaFile = mediaFileService.getMediaFile(id);
-        String username = securityService.getCurrentUsername(request);
-        ratingService.setRatingForUser(username, mediaFile, rating);
 
         return new ModelAndView(new RedirectView("main.view?id=" + id));
     }
@@ -66,5 +72,13 @@ public class SetRatingController extends AbstractController {
 
     public void setMediaFileService(MediaFileService mediaFileService) {
         this.mediaFileService = mediaFileService;
+    }
+
+	public void setMediaFileDao(MediaFileDao mediaFileDao) {
+		this.mediaFileDao = mediaFileDao;
+    }
+
+	public void setMediaFileMemoryCache(Ehcache mediaFileMemoryCache) {
+		this.mediaFileMemoryCache = mediaFileMemoryCache;
     }
 }

@@ -113,6 +113,8 @@
         <property name="ratingService" ref="ratingService"/>
         <property name="mediaFileService" ref="mediaFileService"/>
         <property name="securityService" ref="securityService"/>
+        <property name="mediaFileMemoryCache" ref="mediaFileMemoryCache"/>
+        <property name="mediaFileDao" ref="mediaFileDao"/>
     </bean>
     <bean id="randomPlayQueueController" class="net.sourceforge.subsonic.controller.RandomPlayQueueController">
         <property name="viewName" value="reload"/>

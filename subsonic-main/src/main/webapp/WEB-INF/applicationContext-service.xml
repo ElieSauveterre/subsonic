@@ -257,6 +257,7 @@
         <property name="ratingService" ref="ratingService"/>
         <property name="securityService" ref="securityService"/>
         <property name="podcastService" ref="podcastService"/>
+        <property name="mediaFileMemoryCache" ref="mediaFileMemoryCache"/>
     </bean>
 
     <bean id="ajaxPlaylistService" class="net.sourceforge.subsonic.ajax.PlaylistService">
@@ -267,6 +268,7 @@
         <property name="playerService" ref="playerService"/>
         <property name="mediaFileDao" ref="mediaFileDao"/>
         <property name="localeResolver" ref="localeResolver"/>
+        <property name="mediaFileMemoryCache" ref="mediaFileMemoryCache"/>
     </bean>
 
     <bean id="ajaxLyricsService" class="net.sourceforge.subsonic.ajax.LyricsService"/>

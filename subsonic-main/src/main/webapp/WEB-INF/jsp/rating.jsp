@@ -18,11 +18,8 @@ PARAMETERS
     </sub:url>
 
     <c:choose>
-        <c:when test="${param.rating ge i * 10}">
+        <c:when test="${param.rating ge i}">
             <spring:theme code="ratingOnImage" var="imageUrl"/>
-        </c:when>
-        <c:when test="${param.rating ge i*10 - 7 and param.rating le i*10 - 3}">
-            <spring:theme code="ratingHalfImage" var="imageUrl"/>
         </c:when>
         <c:otherwise>
             <spring:theme code="ratingOffImage" var="imageUrl"/>
@@ -31,7 +28,7 @@ PARAMETERS
 
     <c:choose>
         <c:when test="${param.readonly}">
-            <img src="${imageUrl}" style="margin-right:-3px" alt="" title="<fmt:message key="rating.rating"/> ${param.rating/10}">
+            <img src="${imageUrl}" style="margin-right:-3px" alt="" title="<fmt:message key="rating.rating"/> ${param.rating}">
         </c:when>
         <c:otherwise>
             <a href="${ratingUrl}"><img src="${imageUrl}" style="margin-right:-3px" alt="" title="<fmt:message key="rating.rating"/> ${i}"></a>

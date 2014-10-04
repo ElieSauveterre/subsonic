@@ -123,6 +123,7 @@
                     <c:param name="starred" value="${not empty song.starredDate}"/>
                     <c:param name="video" value="false"/>
                     <c:param name="asTable" value="true"/>
+                    <c:param name="rating" value="${album.rating}"/>
                 </c:import>
 
                 <td class="truncate">
@@ -169,6 +170,7 @@
                     <c:param name="starred" value="${not empty video.starredDate}"/>
                     <c:param name="video" value="${model.player.web}"/>
                     <c:param name="asTable" value="true"/>
+                    <c:param name="rating" value="${song.rating}"/>
                 </c:import>
                 <td class="truncate">
                     <a href="${videoUrl}">${fn:escapeXml(video.name)}</a>

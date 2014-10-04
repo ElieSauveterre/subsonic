@@ -149,7 +149,7 @@ public class HomeController extends ParameterizableViewController {
         List<Album> result = new ArrayList<Album>();
         for (MediaFile mediaFile : ratingService.getHighestRatedAlbums(offset, count, musicFolders)) {
             Album album = createAlbum(mediaFile);
-            album.setRating((int) Math.round(ratingService.getAverageRating(mediaFile) * 10.0D));
+           album.setRating(mediaFile.getRating());
             result.add(album);
         }
         return result;

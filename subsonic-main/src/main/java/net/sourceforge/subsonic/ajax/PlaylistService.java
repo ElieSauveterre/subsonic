@@ -165,24 +165,21 @@ public class PlaylistService {
         List<PlaylistInfo.Entry> result = new ArrayList<PlaylistInfo.Entry>();
         for (MediaFile file : files) {
             result.add(new PlaylistInfo.Entry(file.getId(), file.getTitle(), file.getArtist(), file.getAlbumName(),
-                    file.getDurationString(), file.getStarredDate() != null, file.isPresent()));
+                    file.getDurationString(), file.getStarredDate() != null, file.isPresent(), file.getRating()));
         }
 
         return result;
     }
 
-    public PlaylistInfo toggleStar(int id, int index) {
+    public PlaylistInfo toggleStar(int id, int index, int rating) {
         HttpServletRequest request = WebContextFactory.get().getHttpServletRequest();
         String username = securityService.getCurrentUsername(request);
         List<MediaFile> files = playlistService.getFilesInPlaylist(id, true);
         MediaFile file = files.get(index);
 
-        boolean starred = mediaFileDao.getMediaFileStarredDate(file.getId(), username) != null;
-        if (starred) {
-            mediaFileDao.unstarMediaFile(file.getId(), username);
-        } else {
-            mediaFileDao.starMediaFile(file.getId(), username);
-        }
+       mediaFileDao.starMediaFile(file.getId(), rating);
+		file.setRating(rating);
+		mediaFileMemoryCache.put(new Element(file.getFile(), file));
         return getPlaylist(id);
     }
 

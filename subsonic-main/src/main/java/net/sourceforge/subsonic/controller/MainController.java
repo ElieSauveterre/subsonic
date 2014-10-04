@@ -145,6 +145,10 @@ public class MainController extends AbstractController {
             averageRating = 0.0D;
         }
 
+        if (mediaFiles.size() == 1) {
+			map.put("rating", mediaFiles.get(0).getRating());
+        }
+
         map.put("userRating", 10 * userRating);
         map.put("averageRating", Math.round(10.0D * averageRating));
         map.put("starred", mediaFileService.getMediaFileStarredDate(dir.getId(), username) != null);

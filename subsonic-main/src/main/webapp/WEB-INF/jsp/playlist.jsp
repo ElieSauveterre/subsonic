@@ -105,10 +105,12 @@
                 var song  = songs[i];
                 var id = i + 1;
                 dwr.util.cloneNode("pattern", { idSuffix:id });
-                if (song.starred) {
-                    $("#starSong" + id).attr("src", "<spring:theme code='ratingOnImage'/>");
-                } else {
-                    $("#starSong" + id).attr("src", "<spring:theme code='ratingOffImage'/>");
+                 for ( var r = 1; r <= song.rating; r++) {
+               		$("#starSong_" + r + "_" +id).attr("src", "<spring:theme code='ratingOnImage'/>");
+	   			}
+	              
+	            for ( var r = song.rating + 1; r <= 5; r++) {
+	            	$("#starSong_" + r + "_" +id).attr("src", "<spring:theme code='ratingOffImage'/>");
                 }
                 if (!song.present) {
                     $("#missing" + id).show();
@@ -142,8 +144,8 @@
             top.playQueue.onAddNext(songs[index].id);
             $().toastmessage('showSuccessToast', '<fmt:message key="main.addnext.toast"/>')
         }
-        function onStar(index) {
-            playlistService.toggleStar(playlist.id, index, playlistCallback);
+        function onStar(index, rating) {
+            playlistService.toggleStar(playlist.id, index, rating, playlistCallback);
         }
         function onRemove(index) {
             playlistService.remove(playlist.id, index, function (playlistInfo){playlistCallback(playlistInfo); top.left.updatePlaylists()});
@@ -227,8 +229,21 @@
     <tbody id="playlistBody">
     <tr id="pattern" style="display:none;margin:0;padding:0;border:0">
         <td class="fit">
-            <img id="starSong" onclick="onStar(this.id.substring(8) - 1)" src="<spring:theme code="ratingOffImage"/>"
-                 style="cursor:pointer" alt="" title=""></td>
+           <a href="javascript:void(0)"><img
+						id="starSong_1_" onclick="onStar(this.id.substring(11) - 1, 1)"
+						src="<spring:theme code="ratingOffImage"/>" alt=""></a> <a
+					href="javascript:void(0)"><img id="starSong_2_"
+						onclick="onStar(this.id.substring(11) - 1, 2)"
+						src="<spring:theme code="ratingOffImage"/>" alt=""></a> <a
+					href="javascript:void(0)"><img id="starSong_3_"
+						onclick="onStar(this.id.substring(11) - 1, 3)"
+						src="<spring:theme code="ratingOffImage"/>" alt=""></a> <a
+					href="javascript:void(0)"><img id="starSong_4_"
+						onclick="onStar(this.id.substring(11) - 1, 4)"
+						src="<spring:theme code="ratingOffImage"/>" alt=""></a> <a
+					href="javascript:void(0)"><img id="starSong_5_"
+						onclick="onStar(this.id.substring(11) - 1, 5)"
+						src="<spring:theme code="ratingOffImage"/>" alt=""></a></td>
         <td class="fit">
             <img id="play" src="<spring:theme code="playImage"/>" alt="<fmt:message key="common.play"/>" title="<fmt:message key="common.play"/>"
                  style="padding-right:0.1em;cursor:pointer" onclick="onPlay(this.id.substring(4) - 1)"></td>

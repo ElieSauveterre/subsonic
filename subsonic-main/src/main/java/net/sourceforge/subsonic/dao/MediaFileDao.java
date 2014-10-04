@@ -26,7 +26,14 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import net.sourceforge.subsonic.util.RatingUtil;
 
+import org.jaudiotagger.audio.AudioFile;
+import org.jaudiotagger.audio.AudioFileIO;
+import org.jaudiotagger.tag.Tag;
+import org.jaudiotagger.tag.TagField;
+import org.jaudiotagger.tag.id3.ID3v23Frame;
+import org.jaudiotagger.tag.id3.framebody.FrameBodyPOPM;
 import org.apache.commons.lang.StringUtils;
 import org.springframework.jdbc.core.RowMapper;
 import org.springframework.jdbc.core.simple.ParameterizedRowMapper;
@@ -47,7 +54,7 @@ public class MediaFileDao extends AbstractDao {
 
     private static final String COLUMNS = "id, path, folder, type, format, title, album, artist, album_artist, disc_number, " +
                                           "track_number, year, genre, bit_rate, variable_bit_rate, duration_seconds, file_size, width, height, cover_art_path, " +
-                                          "parent_path, play_count, last_played, comment, created, changed, last_scanned, children_last_updated, present, version";
+                                          "parent_path, play_count, last_played, comment, created, changed, last_scanned, children_last_updated, present, version, rating";
     private static final String GENRE_COLUMNS = "name, song_count, album_count";
 
     public static final int VERSION = 4;
@@ -159,7 +166,8 @@ public class MediaFileDao extends AbstractDao {
                      "last_scanned=?," +
                      "children_last_updated=?," +
                      "present=?, " +
-                     "version=? " +
+                     "version=?, " +
+                     "rating=?" +
                      "where path=?";
 
         int n = update(sql,
@@ -167,7 +175,7 @@ public class MediaFileDao extends AbstractDao {
                        file.getAlbumArtist(), file.getDiscNumber(), file.getTrackNumber(), file.getYear(), file.getGenre(), file.getBitRate(),
                        file.isVariableBitRate(), file.getDurationSeconds(), file.getFileSize(), file.getWidth(), file.getHeight(),
                        file.getCoverArtPath(), file.getParentPath(), file.getPlayCount(), file.getLastPlayed(), file.getComment(),
-                       file.getChanged(), file.getLastScanned(), file.getChildrenLastUpdated(), file.isPresent(), VERSION, file.getPath());
+                       file.getChanged(), file.getLastScanned(), file.getChildrenLastUpdated(), file.isPresent(), VERSION, file.getRating(), file.getPath());
 
         if (n == 0) {
 
@@ -185,7 +193,7 @@ public class MediaFileDao extends AbstractDao {
                    file.isVariableBitRate(), file.getDurationSeconds(), file.getFileSize(), file.getWidth(), file.getHeight(),
                    file.getCoverArtPath(), file.getParentPath(), file.getPlayCount(), file.getLastPlayed(), file.getComment(),
                    file.getCreated(), file.getChanged(), file.getLastScanned(),
-                   file.getChildrenLastUpdated(), file.isPresent(), VERSION);
+                   file.getChildrenLastUpdated(), file.isPresent(), VERSION, file.getRating());
         }
 
         int id = queryForInt("select id from media_file where path=?", null, file.getPath());
@@ -484,6 +492,48 @@ public class MediaFileDao extends AbstractDao {
                           "media_file.folder in (:folders) " +
                           "order by starred_media_file.created desc limit :count offset :offset",
                           rowMapper, args);
+    }
+
+    public void starMediaFile(int id, int rating) {
+		update("update media_file set rating = ? where id = ?", rating, id);
+
+		// Update File
+		try {
+
+			long ratingWindows = RatingUtil.subsonicToWindows(rating);
+
+			MediaFile mediaFile = getMediaFile(id);
+
+			if (mediaFile.isFile()) {
+				AudioFile f = AudioFileIO.read(mediaFile.getFile());
+				Tag tag = f.getTag();
+
+				List<TagField> tagFields = tag.get("POPM");
+
+				if (tagFields.isEmpty()) {
+
+					FrameBodyPOPM frameBody = new FrameBodyPOPM();
+					frameBody.setEmailToUser("Windows Media Player 9 Series");
+					frameBody.setCounter(0);
+					frameBody.setRating(ratingWindows);
+
+					ID3v23Frame frame = new ID3v23Frame("POPM");
+					frame.setBody(frameBody);
+					tag.addField(frame);
+
+				} else {
+					ID3v23Frame frameOld = (ID3v23Frame) tagFields.get(0);
+					FrameBodyPOPM frameOldBody = (FrameBodyPOPM) frameOld
+							.getBody();
+					frameOldBody.setRating(ratingWindows);
+    }
+
+				f.commit();
+			}
+
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
     }
 
     public int getAlbumCount(final List<MusicFolder> musicFolders) {

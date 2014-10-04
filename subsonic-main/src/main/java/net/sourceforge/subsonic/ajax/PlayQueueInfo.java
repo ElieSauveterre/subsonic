@@ -113,6 +113,7 @@ public class PlayQueueInfo {
         private final String remoteStreamUrl;
         private final String coverArtUrl;
         private final String remoteCoverArtUrl;
+		private final int rating;
 
         public Entry(int id, Integer trackNumber, String title, String artist, String album, String genre, Integer year,
                 String bitRate, Integer duration, String durationAsString, String format, String contentType, String fileSize,
@@ -136,6 +137,7 @@ public class PlayQueueInfo {
             this.remoteStreamUrl = remoteStreamUrl;
             this.coverArtUrl = coverArtUrl;
             this.remoteCoverArtUrl = remoteCoverArtUrl;
+			this.rating = rating;
         }
 
         public int getId() {

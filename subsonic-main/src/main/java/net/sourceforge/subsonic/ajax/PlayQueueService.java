@@ -34,7 +34,8 @@ import org.springframework.web.servlet.support.RequestContextUtils;
 
 import com.google.common.base.Function;
 import com.google.common.collect.Lists;
-
+import net.sf.ehcache.Ehcache;
+import net.sf.ehcache.Element;
 import net.sourceforge.subsonic.dao.MediaFileDao;
 import net.sourceforge.subsonic.dao.PlayQueueDao;
 import net.sourceforge.subsonic.domain.MediaFile;
@@ -81,6 +82,7 @@ public class PlayQueueService {
     private net.sourceforge.subsonic.service.PlaylistService playlistService;
     private MediaFileDao mediaFileDao;
     private PlayQueueDao playQueueDao;
+	private Ehcache mediaFileMemoryCache;
 
     /**
      * Returns the play queue for the player of the current user.
@@ -504,19 +506,16 @@ public class PlayQueueService {
         return doRemove(request, response, index);
     }
 
-    public PlayQueueInfo toggleStar(int index) throws Exception {
+    public PlayQueueInfo toggleStar(int index, int rating) throws Exception {
         HttpServletRequest request = WebContextFactory.get().getHttpServletRequest();
         HttpServletResponse response = WebContextFactory.get().getHttpServletResponse();
         Player player = getCurrentPlayer(request, response);
 
         MediaFile file = player.getPlayQueue().getFile(index);
-        String username = securityService.getCurrentUsername(request);
-        boolean starred = mediaFileDao.getMediaFileStarredDate(file.getId(), username) != null;
-        if (starred) {
-            mediaFileDao.unstarMediaFile(file.getId(), username);
-        } else {
-            mediaFileDao.starMediaFile(file.getId(), username);
-        }
+       	mediaFileDao.starMediaFile(file.getId(), rating);
+		file.setRating(rating);
+		mediaFileMemoryCache.put(new Element(file.getFile(), file));
+
         return convert(request, player, false);
     }
 
@@ -647,7 +646,7 @@ public class PlayQueueService {
                     file.getAlbumName(), file.getGenre(), file.getYear(), formatBitRate(file),
                     file.getDurationSeconds(), file.getDurationString(), format, formatContentType(format),
                     formatFileSize(file.getFileSize(), locale), starred, albumUrl, streamUrl, remoteStreamUrl,
-                    coverArtUrl, remoteCoverArtUrl));
+                    coverArtUrl, remoteCoverArtUrl, file.getRating()));
         }
         boolean isStopEnabled = playQueue.getStatus() == PlayQueue.Status.PLAYING && !player.isExternalWithPlaylist();
         float gain = jukeboxService.getGain();

@@ -1476,7 +1476,7 @@ public class RESTController extends MultiActionController {
 
     private void starOrUnstar(HttpServletRequest request, HttpServletResponse response, boolean star) throws Exception {
         request = wrapRequest(request);
-
+		int rating = ServletRequestUtils.getIntParameter(request, "rating");
         String username = securityService.getCurrentUser(request).getUsername();
         for (int id : getIntParameters(request, "id")) {
             MediaFile mediaFile = mediaFileDao.getMediaFile(id);
@@ -1484,11 +1484,7 @@ public class RESTController extends MultiActionController {
                 error(request, response, ErrorCode.NOT_FOUND, "Media file not found: " + id);
                 return;
             }
-            if (star) {
-                mediaFileDao.starMediaFile(id, username);
-            } else {
-                mediaFileDao.unstarMediaFile(id, username);
-            }
+            mediaFileDao.starMediaFile(id, rating);
         }
         for (int albumId : getIntParameters(request, "albumId")) {
             Album album = albumDao.getAlbum(albumId);

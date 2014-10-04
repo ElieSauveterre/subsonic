@@ -50,8 +50,13 @@ import net.sourceforge.subsonic.service.metadata.MetaData;
 import net.sourceforge.subsonic.service.metadata.MetaDataParser;
 import net.sourceforge.subsonic.service.metadata.MetaDataParserFactory;
 import net.sourceforge.subsonic.util.FileUtil;
-
+import net.sourceforge.subsonic.util.RatingUtil;
 import static net.sourceforge.subsonic.domain.MediaFile.MediaType.*;
+import org.apache.commons.io.FilenameUtils;
+import org.apache.commons.lang.StringUtils;
+import org.jaudiotagger.audio.AudioFile;
+import org.jaudiotagger.audio.AudioFileIO;
+import org.jaudiotagger.tag.Tag;
 
 /**
  * Provides services for instantiating and caching media files and cover art.
@@ -492,6 +497,31 @@ public class MediaFileService {
             mediaFile.setFileSize(FileUtil.length(file));
             mediaFile.setMediaType(getMediaType(mediaFile));
 
+            /**
+			 * 
+			 * 5 => 255 <br/>
+			 * 4 => 196 <br/>
+			 * 3 => 128 <br/>
+			 * 2 => 64 <br/>
+			 * 1 => 1 <br/>
+			 * 0 => IllegalArgumentException
+			 * 
+			 */
+			int rating = 0;
+			try {
+				AudioFile audioFile = AudioFileIO.read(file);
+				Tag tag = audioFile.getTag();
+
+				String popmValue = StringUtils.trimToNull(tag.getFirst("POPM"));
+				String[] popmValueExtract = popmValue.split("\"");
+
+				rating = RatingUtil.windowsToSubsonic(popmValueExtract[3]);
+
+			} catch (Exception e) {
+
+			}
+
+			mediaFile.setRating(rating);
         } else {
 
             // Is this an album?
