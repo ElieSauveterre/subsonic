@@ -224,6 +224,7 @@
         <property name="transcodingService" ref="transcodingService"/>
         <property name="settingsService" ref="settingsService"/>
         <property name="securityService" ref="securityService"/>
+        <property name="mediaFileMemoryCache" ref="mediaFileMemoryCache"/>
     </bean>
 
     <bean id="ajaxPlaylistService" class="net.sourceforge.subsonic.ajax.PlaylistService">
@@ -232,6 +233,7 @@
         <property name="settingsService" ref="settingsService"/>
         <property name="mediaFileService" ref="mediaFileService"/>
         <property name="mediaFileDao" ref="mediaFileDao"/>
+        <property name="mediaFileMemoryCache" ref="mediaFileMemoryCache"/>
     </bean>
 
     <bean id="ajaxLyricsService" class="net.sourceforge.subsonic.ajax.LyricsService"/>
@@ -242,7 +244,6 @@
     </bean>
 
     <bean id="ajaxStarService" class="net.sourceforge.subsonic.ajax.StarService">
-        <property name="securityService" ref="securityService"/>
         <property name="mediaFileDao" ref="mediaFileDao"/>
     </bean>
 

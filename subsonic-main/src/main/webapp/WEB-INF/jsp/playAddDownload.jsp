@@ -18,16 +18,19 @@ PARAMETERS
 </sub:url>
 <c:if test="${param.starEnabled}">
     <c:if test="${param.asTable}"><td></c:if>
-    <a href="#" onclick="toggleStar(${param.id}, '#starImage${param.id}'); return false;">
-        <c:choose>
-            <c:when test="${param.starred}">
-                <img id="starImage${param.id}" src="<spring:theme code="ratingOnImage"/>" alt="">
-            </c:when>
-            <c:otherwise>
-                <img id="starImage${param.id}" src="<spring:theme code="ratingOffImage"/>" alt="">
-            </c:otherwise>
-        </c:choose>
-    </a>
+
+    <c:forEach begin="1" end="${param.rating}" var="rate">
+    	<a href="#" onclick="toggleStar(${param.id}, '#starImage${param.id}', ${rate}); return false;">
+    		<img id="starImage${param.id}_${rate}" src="<spring:theme code="ratingOnImage"/>" alt=""></a>
+    </c:forEach>
+    
+    <c:if test="${param.rating lt 5}">
+    	<c:forEach begin="${param.rating + 1}" end="5" var="rate">
+    		<a href="#" onclick="toggleStar(${param.id}, '#starImage${param.id}', ${rate}); return false;">
+    			<img id="starImage${param.id}_${rate}" src="<spring:theme code="ratingOffImage"/>" alt=""></a>
+    	</c:forEach>
+    </c:if>
+
     <c:if test="${param.asTable}"></td></c:if>
 </c:if>
 

@@ -81,15 +81,17 @@
         }
     }
 
-    function toggleStar(mediaFileId, imageId) {
-        if ($(imageId).attr("src").indexOf("<spring:theme code="ratingOnImage"/>") != -1) {
-            $(imageId).attr("src", "<spring:theme code="ratingOffImage"/>");
-            starService.unstar(mediaFileId);
+    function toggleStar(mediaFileId, imageId, rating) {
+    	
+    	for ( var i = 1; i <= rating; i++) {
+    		 $(imageId+"_"+i).attr("src", "<spring:theme code="ratingOnImage"/>");
         }
-        else if ($(imageId).attr("src").indexOf("<spring:theme code="ratingOffImage"/>") != -1) {
-            $(imageId).attr("src", "<spring:theme code="ratingOnImage"/>");
-            starService.star(mediaFileId);
+    	
+    	for ( var i = rating+1; i <= 5; i++) {
+   			$(imageId+"_"+i).attr("src", "<spring:theme code="ratingOffImage"/>");
         }
+    	
+    	 starService.star(mediaFileId, rating);
     }
 
     function onAppendPlaylist() {
@@ -154,7 +156,7 @@
         <c:import url="rating.jsp">
             <c:param name="path" value="${model.dir.path}"/>
             <c:param name="readonly" value="true"/>
-            <c:param name="rating" value="${model.averageRating}"/>
+            <c:param name="rating" value="${model.rating}"/>
         </c:import>
     </c:if>
 </h1>
@@ -213,7 +215,7 @@
             <c:import url="rating.jsp">
                 <c:param name="path" value="${model.dir.path}"/>
                 <c:param name="readonly" value="false"/>
-                <c:param name="rating" value="${model.userRating}"/>
+                <c:param name="rating" value="${model.rating}"/>
             </c:import>
         </c:if>
 
@@ -302,6 +304,7 @@
                         <c:param name="starEnabled" value="true"/>
                         <c:param name="starred" value="${not empty child.starredDate}"/>
                         <c:param name="asTable" value="true"/>
+                        <c:param name="rating" value="${child.rating}"/>
                     </c:import>
 
                     <c:choose>

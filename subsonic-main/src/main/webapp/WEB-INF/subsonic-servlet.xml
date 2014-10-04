@@ -100,9 +100,9 @@
         <property name="securityService" ref="securityService"/>
     </bean>
     <bean id="setRatingController" class="net.sourceforge.subsonic.controller.SetRatingController">
-        <property name="ratingService" ref="musicInfoService"/>
         <property name="mediaFileService" ref="mediaFileService"/>
-        <property name="securityService" ref="securityService"/>
+        <property name="mediaFileDao" ref="mediaFileDao"/>
+        <property name="mediaFileMemoryCache" ref="mediaFileMemoryCache"/>
     </bean>
     <bean id="randomPlayQueueController" class="net.sourceforge.subsonic.controller.RandomPlayQueueController">
         <property name="viewName" value="reload"/>

@@ -21,9 +21,9 @@ package net.sourceforge.subsonic.domain;
 import java.io.File;
 import java.util.Date;
 
-import org.apache.commons.io.FilenameUtils;
-
 import net.sourceforge.subsonic.util.FileUtil;
+
+import org.apache.commons.io.FilenameUtils;
 
 /**
  * A media file (audio, video or directory) with an assortment of its meta data.
@@ -64,12 +64,25 @@ public class MediaFile {
     private Date childrenLastUpdated;
     private boolean present;
     private int version;
+	private int rating;
 
-    public MediaFile(int id, String path, String folder, MediaType mediaType, String format, String title,
-                     String albumName, String artist, String albumArtist, Integer discNumber, Integer trackNumber, Integer year, String genre, Integer bitRate,
-                     boolean variableBitRate, Integer durationSeconds, Long fileSize, Integer width, Integer height, String coverArtPath,
-                     String parentPath, int playCount, Date lastPlayed, String comment, Date created, Date changed, Date lastScanned,
-                     Date childrenLastUpdated, boolean present, int version) {
+	public int getRating() {
+		return rating;
+	}
+
+	public void setRating(int rating) {
+		this.rating = rating;
+	}
+
+	public MediaFile(int id, String path, String folder, MediaType mediaType,
+			String format, String title, String albumName, String artist,
+			String albumArtist, Integer discNumber, Integer trackNumber,
+			Integer year, String genre, Integer bitRate,
+			boolean variableBitRate, Integer durationSeconds, Long fileSize,
+			Integer width, Integer height, String coverArtPath,
+			String parentPath, int playCount, Date lastPlayed, String comment,
+			Date created, Date changed, Date lastScanned,
+			Date childrenLastUpdated, boolean present, int version, int rating) {
         this.id = id;
         this.path = path;
         this.folder = folder;
@@ -100,6 +113,7 @@ public class MediaFile {
         this.childrenLastUpdated = childrenLastUpdated;
         this.present = present;
         this.version = version;
+		this.rating = rating;
     }
 
     public MediaFile() {
@@ -151,7 +165,8 @@ public class MediaFile {
     }
 
     public boolean isAudio() {
-        return mediaType == MediaType.MUSIC || mediaType == MediaType.AUDIOBOOK || mediaType == MediaType.PODCAST;
+		return mediaType == MediaType.MUSIC || mediaType == MediaType.AUDIOBOOK
+				|| mediaType == MediaType.PODCAST;
     }
 
     public String getFormat() {
@@ -446,11 +461,6 @@ public class MediaFile {
     }
 
     public static enum MediaType {
-        MUSIC,
-        PODCAST,
-        AUDIOBOOK,
-        VIDEO,
-        DIRECTORY,
-        ALBUM
+		MUSIC, PODCAST, AUDIOBOOK, VIDEO, DIRECTORY, ALBUM
     }
 }

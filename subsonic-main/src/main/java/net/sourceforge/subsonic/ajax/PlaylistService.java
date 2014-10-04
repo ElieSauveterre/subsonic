@@ -26,6 +26,8 @@ import java.util.Locale;
 
 import javax.servlet.http.HttpServletRequest;
 
+import net.sf.ehcache.Ehcache;
+import net.sf.ehcache.Element;
 import net.sourceforge.subsonic.dao.MediaFileDao;
 import net.sourceforge.subsonic.service.SettingsService;
 import org.directwebremoting.WebContextFactory;
@@ -48,21 +50,25 @@ public class PlaylistService {
     private net.sourceforge.subsonic.service.PlaylistService playlistService;
     private MediaFileDao mediaFileDao;
     private SettingsService settingsService;
+	private Ehcache mediaFileMemoryCache;
 
     public List<Playlist> getReadablePlaylists() {
-        HttpServletRequest request = WebContextFactory.get().getHttpServletRequest();
+		HttpServletRequest request = WebContextFactory.get()
+				.getHttpServletRequest();
         String username = securityService.getCurrentUsername(request);
         return playlistService.getReadablePlaylistsForUser(username);
     }
 
     public List<Playlist> getWritablePlaylists() {
-        HttpServletRequest request = WebContextFactory.get().getHttpServletRequest();
+		HttpServletRequest request = WebContextFactory.get()
+				.getHttpServletRequest();
         String username = securityService.getCurrentUsername(request);
         return playlistService.getWritablePlaylistsForUser(username);
     }
 
     public PlaylistInfo getPlaylist(int id) {
-        HttpServletRequest request = WebContextFactory.get().getHttpServletRequest();
+		HttpServletRequest request = WebContextFactory.get()
+				.getHttpServletRequest();
 
         Playlist playlist = playlistService.getPlaylist(id);
         List<MediaFile> files = playlistService.getFilesInPlaylist(id);
@@ -73,9 +79,11 @@ public class PlaylistService {
     }
 
     public List<Playlist> createEmptyPlaylist() {
-        HttpServletRequest request = WebContextFactory.get().getHttpServletRequest();
+		HttpServletRequest request = WebContextFactory.get()
+				.getHttpServletRequest();
         Locale locale = settingsService.getLocale();
-        DateFormat dateFormat = DateFormat.getDateTimeInstance(DateFormat.MEDIUM, DateFormat.SHORT, locale);
+		DateFormat dateFormat = DateFormat.getDateTimeInstance(
+				DateFormat.MEDIUM, DateFormat.SHORT, locale);
 
         Date now = new Date();
         Playlist playlist = new Playlist();
@@ -103,25 +111,22 @@ public class PlaylistService {
     private List<PlaylistInfo.Entry> createEntries(List<MediaFile> files) {
         List<PlaylistInfo.Entry> result = new ArrayList<PlaylistInfo.Entry>();
         for (MediaFile file : files) {
-            result.add(new PlaylistInfo.Entry(file.getId(), file.getTitle(), file.getArtist(), file.getAlbumName(),
-                    file.getDurationString(), file.getStarredDate() != null));
+			result.add(new PlaylistInfo.Entry(file.getId(), file.getTitle(),
+					file.getArtist(), file.getAlbumName(), file
+							.getDurationString(), file.getRating()));
         }
 
         return result;
     }
 
-    public PlaylistInfo toggleStar(int id, int index) {
-        HttpServletRequest request = WebContextFactory.get().getHttpServletRequest();
-        String username = securityService.getCurrentUsername(request);
+	public PlaylistInfo toggleStar(int id, int index, int rating) {
         List<MediaFile> files = playlistService.getFilesInPlaylist(id);
         MediaFile file = files.get(index);
 
-        boolean starred = mediaFileDao.getMediaFileStarredDate(file.getId(), username) != null;
-        if (starred) {
-            mediaFileDao.unstarMediaFile(file.getId(), username);
-        } else {
-            mediaFileDao.starMediaFile(file.getId(), username);
-        }
+		mediaFileDao.starMediaFile(file.getId(), rating);
+		file.setRating(rating);
+		mediaFileMemoryCache.put(new Element(file.getFile(), file));
+
         return getPlaylist(id);
     }
 
@@ -156,7 +161,8 @@ public class PlaylistService {
         playlistService.deletePlaylist(id);
     }
 
-    public PlaylistInfo updatePlaylist(int id, String name, String comment, boolean isPublic) {
+	public PlaylistInfo updatePlaylist(int id, String name, String comment,
+			boolean isPublic) {
         Playlist playlist = playlistService.getPlaylist(id);
         playlist.setName(name);
         playlist.setComment(comment);
@@ -165,7 +171,8 @@ public class PlaylistService {
         return getPlaylist(id);
     }
 
-    public void setPlaylistService(net.sourceforge.subsonic.service.PlaylistService playlistService) {
+	public void setPlaylistService(
+			net.sourceforge.subsonic.service.PlaylistService playlistService) {
         this.playlistService = playlistService;
     }
 
@@ -184,4 +191,8 @@ public class PlaylistService {
     public void setSettingsService(SettingsService settingsService) {
         this.settingsService = settingsService;
     }
+
+	public void setMediaFileMemoryCache(Ehcache mediaFileMemoryCache) {
+		this.mediaFileMemoryCache = mediaFileMemoryCache;
+	}
 }

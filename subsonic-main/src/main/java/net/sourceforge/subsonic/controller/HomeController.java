@@ -64,7 +64,8 @@ public class HomeController extends ParameterizableViewController {
     private MediaFileService mediaFileService;
     private SearchService searchService;
 
-    protected ModelAndView handleRequestInternal(HttpServletRequest request, HttpServletResponse response) throws Exception {
+	protected ModelAndView handleRequestInternal(HttpServletRequest request,
+			HttpServletResponse response) throws Exception {
 
         User user = securityService.getCurrentUser(request);
         if (user.isAdminRole() && settingsService.isGettingStartedEnabled()) {
@@ -74,10 +75,14 @@ public class HomeController extends ParameterizableViewController {
         int listSize = DEFAULT_LIST_SIZE;
         int listOffset = DEFAULT_LIST_OFFSET;
         if (request.getParameter("listSize") != null) {
-            listSize = Math.max(0, Math.min(Integer.parseInt(request.getParameter("listSize")), MAX_LIST_SIZE));
+			listSize = Math.max(0, Math.min(
+					Integer.parseInt(request.getParameter("listSize")),
+					MAX_LIST_SIZE));
         }
         if (request.getParameter("listOffset") != null) {
-            listOffset = Math.max(0, Math.min(Integer.parseInt(request.getParameter("listOffset")), MAX_LIST_OFFSET));
+			listOffset = Math.max(0, Math.min(
+					Integer.parseInt(request.getParameter("listOffset")),
+					MAX_LIST_OFFSET));
         }
 
         String listType = request.getParameter("listType");
@@ -121,10 +126,11 @@ public class HomeController extends ParameterizableViewController {
 
     List<Album> getHighestRated(int offset, int count) {
         List<Album> result = new ArrayList<Album>();
-        for (MediaFile mediaFile : ratingService.getHighestRatedAlbums(offset, count)) {
+		for (MediaFile mediaFile : ratingService.getHighestRatedAlbums(offset,
+				count)) {
             Album album = createAlbum(mediaFile);
             if (album != null) {
-                album.setRating((int) Math.round(ratingService.getAverageRating(mediaFile) * 10.0D));
+				album.setRating(mediaFile.getRating());
                 result.add(album);
             }
         }
@@ -133,7 +139,8 @@ public class HomeController extends ParameterizableViewController {
 
     List<Album> getMostFrequent(int offset, int count) {
         List<Album> result = new ArrayList<Album>();
-        for (MediaFile mediaFile : mediaFileService.getMostFrequentlyPlayedAlbums(offset, count)) {
+		for (MediaFile mediaFile : mediaFileService
+				.getMostFrequentlyPlayedAlbums(offset, count)) {
             Album album = createAlbum(mediaFile);
             if (album != null) {
                 album.setPlayCount(mediaFile.getPlayCount());
@@ -145,7 +152,8 @@ public class HomeController extends ParameterizableViewController {
 
     List<Album> getMostRecent(int offset, int count) {
         List<Album> result = new ArrayList<Album>();
-        for (MediaFile mediaFile : mediaFileService.getMostRecentlyPlayedAlbums(offset, count)) {
+		for (MediaFile mediaFile : mediaFileService
+				.getMostRecentlyPlayedAlbums(offset, count)) {
             Album album = createAlbum(mediaFile);
             if (album != null) {
                 album.setLastPlayed(mediaFile.getLastPlayed());
@@ -171,9 +179,11 @@ public class HomeController extends ParameterizableViewController {
         return result;
     }
 
-    List<Album> getStarred(int offset, int count, String username) throws IOException {
+	List<Album> getStarred(int offset, int count, String username)
+			throws IOException {
         List<Album> result = new ArrayList<Album>();
-        for (MediaFile file : mediaFileService.getStarredAlbums(offset, count, username)) {
+		for (MediaFile file : mediaFileService.getStarredAlbums(offset, count,
+				username)) {
             Album album = createAlbum(file);
             if (album != null) {
                 result.add(album);
@@ -193,9 +203,11 @@ public class HomeController extends ParameterizableViewController {
         return result;
     }
 
-    List<Album> getAlphabetical(int offset, int count, boolean byArtist) throws IOException {
+	List<Album> getAlphabetical(int offset, int count, boolean byArtist)
+			throws IOException {
         List<Album> result = new ArrayList<Album>();
-        for (MediaFile file : mediaFileService.getAlphabetialAlbums(offset, count, byArtist)) {
+		for (MediaFile file : mediaFileService.getAlphabetialAlbums(offset,
+				count, byArtist)) {
             Album album = createAlbum(file);
             if (album != null) {
                 result.add(album);
@@ -212,13 +224,16 @@ public class HomeController extends ParameterizableViewController {
             resolveArtistAndAlbumTitle(album, file);
             resolveCoverArt(album, file);
         } catch (Exception x) {
-            LOG.warn("Failed to create albumTitle list entry for " + file.getPath(), x);
+			LOG.warn(
+					"Failed to create albumTitle list entry for "
+							+ file.getPath(), x);
             return null;
         }
         return album;
     }
 
-    private void resolveArtistAndAlbumTitle(Album album, MediaFile file) throws IOException {
+	private void resolveArtistAndAlbumTitle(Album album, MediaFile file)
+			throws IOException {
         album.setArtist(file.getArtist());
         album.setAlbumTitle(file.getAlbumName());
     }

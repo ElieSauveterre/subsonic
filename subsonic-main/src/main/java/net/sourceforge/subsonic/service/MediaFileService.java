@@ -18,6 +18,13 @@
  */
 package net.sourceforge.subsonic.service;
 
+import static net.sourceforge.subsonic.domain.MediaFile.MediaType.ALBUM;
+import static net.sourceforge.subsonic.domain.MediaFile.MediaType.AUDIOBOOK;
+import static net.sourceforge.subsonic.domain.MediaFile.MediaType.DIRECTORY;
+import static net.sourceforge.subsonic.domain.MediaFile.MediaType.MUSIC;
+import static net.sourceforge.subsonic.domain.MediaFile.MediaType.PODCAST;
+import static net.sourceforge.subsonic.domain.MediaFile.MediaType.VIDEO;
+
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -30,9 +37,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeSet;
-
-import org.apache.commons.io.FilenameUtils;
-import org.apache.commons.lang.StringUtils;
 
 import net.sf.ehcache.Ehcache;
 import net.sf.ehcache.Element;
@@ -48,8 +52,13 @@ import net.sourceforge.subsonic.service.metadata.MetaData;
 import net.sourceforge.subsonic.service.metadata.MetaDataParser;
 import net.sourceforge.subsonic.service.metadata.MetaDataParserFactory;
 import net.sourceforge.subsonic.util.FileUtil;
+import net.sourceforge.subsonic.util.RatingUtil;
 
-import static net.sourceforge.subsonic.domain.MediaFile.MediaType.*;
+import org.apache.commons.io.FilenameUtils;
+import org.apache.commons.lang.StringUtils;
+import org.jaudiotagger.audio.AudioFile;
+import org.jaudiotagger.audio.AudioFileIO;
+import org.jaudiotagger.tag.Tag;
 
 /**
  * Provides services for instantiating and caching media files and cover art.
@@ -69,28 +78,35 @@ public class MediaFileService {
     private MetaDataParserFactory metaDataParserFactory;
 
     /**
-     * Returns a media file instance for the given file.  If possible, a cached value is returned.
+	 * Returns a media file instance for the given file. If possible, a cached
+	 * value is returned.
      *
-     * @param file A file on the local file system.
+	 * @param file
+	 *            A file on the local file system.
      * @return A media file instance, or null if not found.
-     * @throws SecurityException If access is denied to the given file.
+	 * @throws SecurityException
+	 *             If access is denied to the given file.
      */
     public MediaFile getMediaFile(File file) {
         return getMediaFile(file, settingsService.isFastCacheEnabled());
     }
 
     /**
-     * Returns a media file instance for the given file.  If possible, a cached value is returned.
+	 * Returns a media file instance for the given file. If possible, a cached
+	 * value is returned.
      *
-     * @param file A file on the local file system.
+	 * @param file
+	 *            A file on the local file system.
      * @return A media file instance, or null if not found.
-     * @throws SecurityException If access is denied to the given file.
+	 * @throws SecurityException
+	 *             If access is denied to the given file.
      */
     public MediaFile getMediaFile(File file, boolean useFastCache) {
 
         // Look in fast memory cache first.
         Element element = mediaFileMemoryCache.get(file);
-        MediaFile result = element == null ? null : (MediaFile) element.getObjectValue();
+		MediaFile result = element == null ? null : (MediaFile) element
+				.getObjectValue();
         if (result != null) {
             return result;
         }
@@ -120,8 +136,12 @@ public class MediaFileService {
         return result;
     }
 
-    private MediaFile checkLastModified(MediaFile mediaFile, boolean useFastCache) {
-        if (useFastCache || (mediaFile.getVersion() >= MediaFileDao.VERSION && mediaFile.getChanged().getTime() >= FileUtil.lastModified(mediaFile.getFile()))) {
+	private MediaFile checkLastModified(MediaFile mediaFile,
+			boolean useFastCache) {
+		if (useFastCache
+				|| (mediaFile.getVersion() >= MediaFileDao.VERSION && mediaFile
+						.getChanged().getTime() >= FileUtil
+						.lastModified(mediaFile.getFile()))) {
             return mediaFile;
         }
         mediaFile = createMediaFile(mediaFile.getFile());
@@ -130,11 +150,14 @@ public class MediaFileService {
     }
 
     /**
-     * Returns a media file instance for the given path name. If possible, a cached value is returned.
+	 * Returns a media file instance for the given path name. If possible, a
+	 * cached value is returned.
      *
-     * @param pathName A path name for a file on the local file system.
+	 * @param pathName
+	 *            A path name for a file on the local file system.
      * @return A media file instance.
-     * @throws SecurityException If access is denied to the given file.
+	 * @throws SecurityException
+	 *             If access is denied to the given file.
      */
     public MediaFile getMediaFile(String pathName) {
         return getMediaFile(new File(pathName));
@@ -151,7 +174,8 @@ public class MediaFileService {
             throw new SecurityException("Access denied to file " + mediaFile);
         }
 
-        return checkLastModified(mediaFile, settingsService.isFastCacheEnabled());
+		return checkLastModified(mediaFile,
+				settingsService.isFastCacheEnabled());
     }
 
     public MediaFile getParentOf(MediaFile mediaFile) {
@@ -164,24 +188,34 @@ public class MediaFileService {
     /**
      * Returns all media files that are children of a given media file.
      *
-     * @param includeFiles       Whether files should be included in the result.
-     * @param includeDirectories Whether directories should be included in the result.
-     * @param sort               Whether to sort files in the same directory.
+	 * @param includeFiles
+	 *            Whether files should be included in the result.
+	 * @param includeDirectories
+	 *            Whether directories should be included in the result.
+	 * @param sort
+	 *            Whether to sort files in the same directory.
      * @return All children media files.
      */
-    public List<MediaFile> getChildrenOf(MediaFile parent, boolean includeFiles, boolean includeDirectories, boolean sort) {
-        return getChildrenOf(parent, includeFiles, includeDirectories, sort, settingsService.isFastCacheEnabled());
+	public List<MediaFile> getChildrenOf(MediaFile parent,
+			boolean includeFiles, boolean includeDirectories, boolean sort) {
+		return getChildrenOf(parent, includeFiles, includeDirectories, sort,
+				settingsService.isFastCacheEnabled());
     }
 
     /**
      * Returns all media files that are children of a given media file.
      *
-     * @param includeFiles       Whether files should be included in the result.
-     * @param includeDirectories Whether directories should be included in the result.
-     * @param sort               Whether to sort files in the same directory.
+	 * @param includeFiles
+	 *            Whether files should be included in the result.
+	 * @param includeDirectories
+	 *            Whether directories should be included in the result.
+	 * @param sort
+	 *            Whether to sort files in the same directory.
      * @return All children media files.
      */
-    public List<MediaFile> getChildrenOf(MediaFile parent, boolean includeFiles, boolean includeDirectories, boolean sort, boolean useFastCache) {
+	public List<MediaFile> getChildrenOf(MediaFile parent,
+			boolean includeFiles, boolean includeDirectories, boolean sort,
+			boolean useFastCache) {
 
         if (!parent.isDirectory()) {
             return Collections.emptyList();
@@ -204,8 +238,10 @@ public class MediaFileService {
         }
 
         if (sort) {
-            Comparator<MediaFile> comparator = new MediaFileComparator(settingsService.isSortAlbumsByYear());
-            // Note: Intentionally not using Collections.sort() since it can be problematic on Java 7.
+			Comparator<MediaFile> comparator = new MediaFileComparator(
+					settingsService.isSortAlbumsByYear());
+			// Note: Intentionally not using Collections.sort() since it can be
+			// problematic on Java 7.
             // http://www.oracle.com/technetwork/java/javase/compatibility-417013.html#jdk7
             Set<MediaFile> set = new TreeSet<MediaFile>(comparator);
             set.addAll(result);
@@ -221,7 +257,8 @@ public class MediaFileService {
      * @see MusicFolder
      */
     public boolean isRoot(MediaFile mediaFile) {
-        for (MusicFolder musicFolder : settingsService.getAllMusicFolders(false, true)) {
+		for (MusicFolder musicFolder : settingsService.getAllMusicFolders(
+				false, true)) {
             if (mediaFile.getPath().equals(musicFolder.getPath().getPath())) {
                 return true;
             }
@@ -241,8 +278,10 @@ public class MediaFileService {
     /**
      * Returns the most frequently played albums.
      *
-     * @param offset Number of albums to skip.
-     * @param count  Maximum number of albums to return.
+	 * @param offset
+	 *            Number of albums to skip.
+	 * @param count
+	 *            Maximum number of albums to return.
      * @return The most frequently played albums.
      */
     public List<MediaFile> getMostFrequentlyPlayedAlbums(int offset, int count) {
@@ -252,8 +291,10 @@ public class MediaFileService {
     /**
      * Returns the most recently played albums.
      *
-     * @param offset Number of albums to skip.
-     * @param count  Maximum number of albums to return.
+	 * @param offset
+	 *            Number of albums to skip.
+	 * @param count
+	 *            Maximum number of albums to return.
      * @return The most recently played albums.
      */
     public List<MediaFile> getMostRecentlyPlayedAlbums(int offset, int count) {
@@ -263,8 +304,10 @@ public class MediaFileService {
     /**
      * Returns the most recently added albums.
      *
-     * @param offset Number of albums to skip.
-     * @param count  Maximum number of albums to return.
+	 * @param offset
+	 *            Number of albums to skip.
+	 * @param count
+	 *            Maximum number of albums to return.
      * @return The most recently added albums.
      */
     public List<MediaFile> getNewestAlbums(int offset, int count) {
@@ -274,12 +317,16 @@ public class MediaFileService {
     /**
      * Returns the most recently starred albums.
      *
-     * @param offset   Number of albums to skip.
-     * @param count    Maximum number of albums to return.
-     * @param username Returns albums starred by this user.
+	 * @param offset
+	 *            Number of albums to skip.
+	 * @param count
+	 *            Maximum number of albums to return.
+	 * @param username
+	 *            Returns albums starred by this user.
      * @return The most recently starred albums for this user.
      */
-    public List<MediaFile> getStarredAlbums(int offset, int count, String username) {
+	public List<MediaFile> getStarredAlbums(int offset, int count,
+			String username) {
         return mediaFileDao.getStarredAlbums(offset, count, username);
     }
 
@@ -287,12 +334,16 @@ public class MediaFileService {
      * Returns albums in alphabetial order.
      *
      *
-     * @param offset Number of albums to skip.
-     * @param count  Maximum number of albums to return.
-     * @param byArtist Whether to sort by artist name
+	 * @param offset
+	 *            Number of albums to skip.
+	 * @param count
+	 *            Maximum number of albums to return.
+	 * @param byArtist
+	 *            Whether to sort by artist name
      * @return Albums in alphabetical order.
      */
-    public List<MediaFile> getAlphabetialAlbums(int offset, int count, boolean byArtist) {
+	public List<MediaFile> getAlphabetialAlbums(int offset, int count,
+			boolean byArtist) {
         return mediaFileDao.getAlphabetialAlbums(offset, count, byArtist);
     }
 
@@ -307,24 +358,28 @@ public class MediaFileService {
     }
 
     public void populateStarredDate(MediaFile mediaFile, String username) {
-        Date starredDate = mediaFileDao.getMediaFileStarredDate(mediaFile.getId(), username);
+		Date starredDate = mediaFileDao.getMediaFileStarredDate(
+				mediaFile.getId(), username);
         mediaFile.setStarredDate(starredDate);
     }
 
     private void updateChildren(MediaFile parent) {
 
         // Check timestamps.
-        if (parent.getChildrenLastUpdated().getTime() >= parent.getChanged().getTime()) {
+		if (parent.getChildrenLastUpdated().getTime() >= parent.getChanged()
+				.getTime()) {
             return;
         }
 
-        List<MediaFile> storedChildren = mediaFileDao.getChildrenOf(parent.getPath());
+		List<MediaFile> storedChildren = mediaFileDao.getChildrenOf(parent
+				.getPath());
         Map<String, MediaFile> storedChildrenMap = new HashMap<String, MediaFile>();
         for (MediaFile child : storedChildren) {
             storedChildrenMap.put(child.getPath(), child);
         }
 
-        List<File> children = filterMediaFiles(FileUtil.listFiles(parent.getFile()));
+		List<File> children = filterMediaFiles(FileUtil.listFiles(parent
+				.getFile()));
         for (File child : children) {
             if (storedChildrenMap.remove(child.getPath()) == null) {
                 // Add children that are not already stored.
@@ -346,8 +401,10 @@ public class MediaFileService {
     public List<File> filterMediaFiles(File[] candidates) {
         List<File> result = new ArrayList<File>();
         for (File candidate : candidates) {
-            String suffix = FilenameUtils.getExtension(candidate.getName()).toLowerCase();
-            if (!isExcluded(candidate) && (FileUtil.isDirectory(candidate) || isAudioFile(suffix) || isVideoFile(suffix))) {
+			String suffix = FilenameUtils.getExtension(candidate.getName())
+					.toLowerCase();
+			if (!isExcluded(candidate)
+					&& (FileUtil.isDirectory(candidate) || isAudioFile(suffix) || isVideoFile(suffix))) {
                 result.add(candidate);
             }
         }
@@ -375,14 +432,17 @@ public class MediaFileService {
     /**
      * Returns whether the given file is excluded.
      *
-     * @param file The child file in question.
+	 * @param file
+	 *            The child file in question.
      * @return Whether the child file is excluded.
      */
     private boolean isExcluded(File file) {
 
-        // Exclude all hidden files starting with a "." or "@eaDir" (thumbnail dir created on Synology devices).
+		// Exclude all hidden files starting with a "." or "@eaDir" (thumbnail
+		// dir created on Synology devices).
         String name = file.getName();
-        return name.startsWith(".") || name.startsWith("@eaDir") || name.equals("Thumbs.db");
+		return name.startsWith(".") || name.startsWith("@eaDir")
+				|| name.equals("Thumbs.db");
     }
 
     private MediaFile createMediaFile(File file) {
@@ -396,9 +456,12 @@ public class MediaFileService {
         mediaFile.setParentPath(file.getParent());
         mediaFile.setChanged(lastModified);
         mediaFile.setLastScanned(new Date());
-        mediaFile.setPlayCount(existingFile == null ? 0 : existingFile.getPlayCount());
-        mediaFile.setLastPlayed(existingFile == null ? null : existingFile.getLastPlayed());
-        mediaFile.setComment(existingFile == null ? null : existingFile.getComment());
+		mediaFile.setPlayCount(existingFile == null ? 0 : existingFile
+				.getPlayCount());
+		mediaFile.setLastPlayed(existingFile == null ? null : existingFile
+				.getLastPlayed());
+		mediaFile.setComment(existingFile == null ? null : existingFile
+				.getComment());
         mediaFile.setChildrenLastUpdated(new Date(0));
         mediaFile.setCreated(lastModified);
         mediaFile.setMediaType(DIRECTORY);
@@ -423,11 +486,38 @@ public class MediaFileService {
                 mediaFile.setHeight(metaData.getHeight());
                 mediaFile.setWidth(metaData.getWidth());
             }
-            String format = StringUtils.trimToNull(StringUtils.lowerCase(FilenameUtils.getExtension(mediaFile.getPath())));
+			String format = StringUtils
+					.trimToNull(StringUtils.lowerCase(FilenameUtils
+							.getExtension(mediaFile.getPath())));
             mediaFile.setFormat(format);
             mediaFile.setFileSize(FileUtil.length(file));
             mediaFile.setMediaType(getMediaType(mediaFile));
 
+			/**
+			 * 
+			 * 5 => 255 <br/>
+			 * 4 => 196 <br/>
+			 * 3 => 128 <br/>
+			 * 2 => 64 <br/>
+			 * 1 => 1 <br/>
+			 * 0 => IllegalArgumentException
+			 * 
+			 */
+			int rating = 0;
+			try {
+				AudioFile audioFile = AudioFileIO.read(file);
+				Tag tag = audioFile.getTag();
+
+				String popmValue = StringUtils.trimToNull(tag.getFirst("POPM"));
+				String[] popmValueExtract = popmValue.split("\"");
+
+				rating = RatingUtil.windowsToSubsonic(popmValueExtract[3]);
+
+			} catch (Exception e) {
+
+			}
+
+			mediaFile.setRating(rating);
         } else {
 
             // Is this an album?
@@ -445,7 +535,8 @@ public class MediaFileService {
                     mediaFile.setMediaType(ALBUM);
 
                     // Guess artist/album name and year.
-                    MetaDataParser parser = metaDataParserFactory.getParser(firstChild);
+					MetaDataParser parser = metaDataParserFactory
+							.getParser(firstChild);
                     if (parser != null) {
                         MetaData metaData = parser.getMetaData(firstChild);
                         mediaFile.setArtist(metaData.getArtist());
@@ -477,11 +568,13 @@ public class MediaFileService {
             return VIDEO;
         }
         String path = mediaFile.getPath().toLowerCase();
-        String genre = StringUtils.trimToEmpty(mediaFile.getGenre()).toLowerCase();
+		String genre = StringUtils.trimToEmpty(mediaFile.getGenre())
+				.toLowerCase();
         if (path.contains("podcast") || genre.contains("podcast")) {
             return PODCAST;
         }
-        if (path.contains("audiobook") || genre.contains("audiobook") || path.contains("audio book") || genre.contains("audio book")) {
+		if (path.contains("audiobook") || genre.contains("audiobook")
+				|| path.contains("audio book") || genre.contains("audio book")) {
             return AUDIOBOOK;
         }
         return MUSIC;
@@ -505,18 +598,23 @@ public class MediaFileService {
     }
 
     /**
-     * Finds a cover art image for the given directory, by looking for it on the disk.
+	 * Finds a cover art image for the given directory, by looking for it on the
+	 * disk.
      */
     private File findCoverArt(File[] candidates) throws IOException {
         for (String mask : settingsService.getCoverArtFileTypesAsArray()) {
             for (File candidate : candidates) {
-                if (candidate.isFile() && candidate.getName().toUpperCase().endsWith(mask.toUpperCase()) && !candidate.getName().startsWith(".")) {
+				if (candidate.isFile()
+						&& candidate.getName().toUpperCase()
+								.endsWith(mask.toUpperCase())
+						&& !candidate.getName().startsWith(".")) {
                     return candidate;
                 }
             }
         }
 
-        // Look for embedded images in audiofiles. (Only check first audio file encountered).
+		// Look for embedded images in audiofiles. (Only check first audio file
+		// encountered).
         JaudiotaggerParser parser = new JaudiotaggerParser();
         for (File candidate : candidates) {
             if (parser.isApplicable(candidate)) {
@@ -547,10 +645,11 @@ public class MediaFileService {
     }
 
     /**
-     * Returns all media files that are children, grand-children etc of a given media file.
-     * Directories are not included in the result.
+	 * Returns all media files that are children, grand-children etc of a given
+	 * media file. Directories are not included in the result.
      *
-     * @param sort Whether to sort files in the same directory.
+	 * @param sort
+	 *            Whether to sort files in the same directory.
      * @return All descendant music files.
      */
     public List<MediaFile> getDescendantsOf(MediaFile ancestor, boolean sort) {
@@ -571,7 +670,8 @@ public class MediaFileService {
         return result;
     }
 
-    public void setMetaDataParserFactory(MetaDataParserFactory metaDataParserFactory) {
+	public void setMetaDataParserFactory(
+			MetaDataParserFactory metaDataParserFactory) {
         this.metaDataParserFactory = metaDataParserFactory;
     }
 
@@ -580,8 +680,8 @@ public class MediaFileService {
     }
 
     /**
-     * Increments the play count and last played date for the given media file and its
-     * directory and album.
+	 * Increments the play count and last played date for the given media file
+	 * and its directory and album.
      */
     public void incrementPlayCount(MediaFile file) {
         Date now = new Date();
@@ -596,7 +696,8 @@ public class MediaFileService {
             updateMediaFile(parent);
         }
 
-        Album album = albumDao.getAlbum(file.getAlbumArtist(), file.getAlbumName());
+		Album album = albumDao.getAlbum(file.getAlbumArtist(),
+				file.getAlbumName());
         if (album != null) {
             album.setLastPlayed(now);
             album.setPlayCount(album.getPlayCount() + 1);

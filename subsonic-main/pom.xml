@@ -281,6 +281,12 @@
             <version>1.0-alpha2</version>
         </dependency>
 
+<dependency>
+	<groupId>org.apache.ant</groupId>
+	<artifactId>ant</artifactId>
+	<version>1.8.2</version>
+</dependency>
+
     </dependencies>
 
     <profiles>
@@ -309,32 +315,32 @@
         </profile>
     </profiles>
 
-    <build>
-        <finalName>subsonic</finalName>
-        <plugins>
+<!--     <build> -->
+<!--         <finalName>subsonic</finalName> -->
+<!--         <plugins> -->
 
-            <plugin>
-                <artifactId>maven-antrun-plugin</artifactId>
-                <executions>
-                    <execution>
-                        <phase>generate-resources</phase>
-                        <configuration>
-                            <target>
-                                <tstamp/>
-                                <copy file="${basedir}/src/main/resources/net/sourceforge/subsonic/i18n/ResourceBundle_en.properties"
-                                      tofile="${project.build.directory}/classes/net/sourceforge/subsonic/i18n/ResourceBundle.properties"/>
-                                <echo file="${project.build.directory}/classes/build_number.txt">${buildNumber}</echo>
-                                <echo file="${project.build.directory}/classes/build_date.txt">${DSTAMP}</echo>
-                                <echo file="${project.build.directory}/classes/version.txt">${project.version}</echo>
-                            </target>
-                        </configuration>
-                        <goals>
-                            <goal>run</goal>
-                        </goals>
-                    </execution>
-                </executions>
-            </plugin>
+<!--             <plugin> -->
+<!--                 <artifactId>maven-antrun-plugin</artifactId> -->
+<!--                 <executions> -->
+<!--                     <execution> -->
+<!--                         <phase>generate-resources</phase> -->
+<!--                         <configuration> -->
+<!--                             <target> -->
+<!--                                 <tstamp/> -->
+<!--                                 <copy file="${basedir}/src/main/resources/net/sourceforge/subsonic/i18n/ResourceBundle_en.properties" -->
+<!--                                       tofile="${project.build.directory}/classes/net/sourceforge/subsonic/i18n/ResourceBundle.properties"/> -->
+<!--                                 <echo file="${project.build.directory}/classes/build_number.txt">${buildNumber}</echo> -->
+<!--                                 <echo file="${project.build.directory}/classes/build_date.txt">${DSTAMP}</echo> -->
+<!--                                 <echo file="${project.build.directory}/classes/version.txt">${project.version}</echo> -->
+<!--                             </target> -->
+<!--                         </configuration> -->
+<!--                         <goals> -->
+<!--                             <goal>run</goal> -->
+<!--                         </goals> -->
+<!--                     </execution> -->
+<!--                 </executions> -->
+<!--             </plugin> -->
 
-        </plugins>
-    </build>
+<!--         </plugins> -->
+<!--     </build> -->
 </project>

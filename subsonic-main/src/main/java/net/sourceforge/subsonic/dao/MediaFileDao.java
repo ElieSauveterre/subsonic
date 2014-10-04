@@ -18,19 +18,31 @@
  */
 package net.sourceforge.subsonic.dao;
 
+import static net.sourceforge.subsonic.domain.MediaFile.MediaType.ALBUM;
+import static net.sourceforge.subsonic.domain.MediaFile.MediaType.AUDIOBOOK;
+import static net.sourceforge.subsonic.domain.MediaFile.MediaType.DIRECTORY;
+import static net.sourceforge.subsonic.domain.MediaFile.MediaType.MUSIC;
+import static net.sourceforge.subsonic.domain.MediaFile.MediaType.PODCAST;
+import static net.sourceforge.subsonic.domain.MediaFile.MediaType.VIDEO;
+
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.Date;
 import java.util.List;
 
-import org.springframework.jdbc.core.RowMapper;
-import org.springframework.jdbc.core.simple.ParameterizedRowMapper;
-
 import net.sourceforge.subsonic.Logger;
 import net.sourceforge.subsonic.domain.MediaFile;
+import net.sourceforge.subsonic.domain.MediaFile.MediaType;
+import net.sourceforge.subsonic.util.RatingUtil;
 
-import static net.sourceforge.subsonic.domain.MediaFile.MediaType;
-import static net.sourceforge.subsonic.domain.MediaFile.MediaType.*;
+import org.jaudiotagger.audio.AudioFile;
+import org.jaudiotagger.audio.AudioFileIO;
+import org.jaudiotagger.tag.Tag;
+import org.jaudiotagger.tag.TagField;
+import org.jaudiotagger.tag.id3.ID3v23Frame;
+import org.jaudiotagger.tag.id3.framebody.FrameBodyPOPM;
+import org.springframework.jdbc.core.RowMapper;
+import org.springframework.jdbc.core.simple.ParameterizedRowMapper;
 
 /**
  * Provides database services for media files.
@@ -40,9 +52,9 @@ import static net.sourceforge.subsonic.domain.MediaFile.MediaType.*;
 public class MediaFileDao extends AbstractDao {
 
     private static final Logger LOG = Logger.getLogger(MediaFileDao.class);
-    private static final String COLUMNS = "id, path, folder, type, format, title, album, artist, album_artist, disc_number, " +
-            "track_number, year, genre, bit_rate, variable_bit_rate, duration_seconds, file_size, width, height, cover_art_path, " +
-            "parent_path, play_count, last_played, comment, created, changed, last_scanned, children_last_updated, present, version";
+	private static final String COLUMNS = "id, path, folder, type, format, title, album, artist, album_artist, disc_number, "
+			+ "track_number, year, genre, bit_rate, variable_bit_rate, duration_seconds, file_size, width, height, cover_art_path, "
+			+ "parent_path, play_count, last_played, comment, created, changed, last_scanned, children_last_updated, present, version, rating";
 
     public static final int VERSION = 2;
 
@@ -52,92 +64,95 @@ public class MediaFileDao extends AbstractDao {
     /**
      * Returns the media file for the given path.
      *
-     * @param path The path.
+	 * @param path
+	 *            The path.
      * @return The media file or null.
      */
     public MediaFile getMediaFile(String path) {
-        return queryOne("select " + COLUMNS + " from media_file where path=?", rowMapper, path);
+		return queryOne("select " + COLUMNS + " from media_file where path=?",
+				rowMapper, path);
     }
 
     /**
      * Returns the media file for the given ID.
      *
-     * @param id The ID.
+	 * @param id
+	 *            The ID.
      * @return The media file or null.
      */
     public MediaFile getMediaFile(int id) {
-        return queryOne("select " + COLUMNS + " from media_file where id=?", rowMapper, id);
+		return queryOne("select " + COLUMNS + " from media_file where id=?",
+				rowMapper, id);
     }
 
     /**
      * Returns the media file that are direct children of the given path.
      *
-     * @param path The path.
+	 * @param path
+	 *            The path.
      * @return The list of children.
      */
     public List<MediaFile> getChildrenOf(String path) {
-        return query("select " + COLUMNS + " from media_file where parent_path=? and present", rowMapper, path);
+		return query("select " + COLUMNS
+				+ " from media_file where parent_path=? and present",
+				rowMapper, path);
     }
 
     public List<MediaFile> getFilesInPlaylist(int playlistId) {
-        return query("select " + prefix(COLUMNS, "media_file") + " from media_file, playlist_file where " +
-                "media_file.id = playlist_file.media_file_id and " +
-                "playlist_file.playlist_id = ? and " +
-                "media_file.present order by playlist_file.id", rowMapper, playlistId);
+		return query("select " + prefix(COLUMNS, "media_file")
+				+ " from media_file, playlist_file where "
+				+ "media_file.id = playlist_file.media_file_id and "
+				+ "playlist_file.playlist_id = ? and "
+				+ "media_file.present order by playlist_file.id", rowMapper,
+				playlistId);
     }
 
     public List<MediaFile> getSongsForAlbum(String artist, String album) {
-        return query("select " + COLUMNS + " from media_file where album_artist=? and album=? and present and type in (?,?,?) order by track_number", rowMapper,
-                artist, album, MUSIC.name(), AUDIOBOOK.name(), PODCAST.name());
+		return query(
+				"select "
+						+ COLUMNS
+						+ " from media_file where album_artist=? and album=? and present and type in (?,?,?) order by track_number",
+				rowMapper, artist, album, MUSIC.name(), AUDIOBOOK.name(),
+				PODCAST.name());
     }
 
     public List<MediaFile> getVideos(int size, int offset) {
-        return query("select " + COLUMNS + " from media_file where type=? and present order by title limit ? offset ?", rowMapper,
-                VIDEO.name(), size, offset);
+		return query(
+				"select "
+						+ COLUMNS
+						+ " from media_file where type=? and present order by title limit ? offset ?",
+				rowMapper, VIDEO.name(), size, offset);
     }
 
     /**
      * Creates or updates a media file.
      *
-     * @param file The media file to create/update.
+	 * @param file
+	 *            The media file to create/update.
      */
     public synchronized void createOrUpdateMediaFile(MediaFile file) {
-        String sql = "update media_file set " +
-                "folder=?," +
-                "type=?," +
-                "format=?," +
-                "title=?," +
-                "album=?," +
-                "artist=?," +
-                "album_artist=?," +
-                "disc_number=?," +
-                "track_number=?," +
-                "year=?," +
-                "genre=?," +
-                "bit_rate=?," +
-                "variable_bit_rate=?," +
-                "duration_seconds=?," +
-                "file_size=?," +
-                "width=?," +
-                "height=?," +
-                "cover_art_path=?," +
-                "parent_path=?," +
-                "play_count=?," +
-                "last_played=?," +
-                "comment=?," +
-                "changed=?," +
-                "last_scanned=?," +
-                "children_last_updated=?," +
-                "present=?, " +
-                "version=? " +
-                "where path=?";
+		String sql = "update media_file set " + "folder=?," + "type=?,"
+				+ "format=?," + "title=?," + "album=?," + "artist=?,"
+				+ "album_artist=?," + "disc_number=?," + "track_number=?,"
+				+ "year=?," + "genre=?," + "bit_rate=?,"
+				+ "variable_bit_rate=?," + "duration_seconds=?,"
+				+ "file_size=?," + "width=?," + "height=?,"
+				+ "cover_art_path=?," + "parent_path=?," + "play_count=?,"
+				+ "last_played=?," + "comment=?," + "changed=?,"
+				+ "last_scanned=?," + "children_last_updated=?,"
+				+ "present=?, " + "version=?, " + "rating=?" + "where path=?";
 
-        int n = update(sql,
-                file.getFolder(), file.getMediaType().name(), file.getFormat(), file.getTitle(), file.getAlbumName(), file.getArtist(),
-                file.getAlbumArtist(), file.getDiscNumber(), file.getTrackNumber(), file.getYear(), file.getGenre(), file.getBitRate(),
-                file.isVariableBitRate(), file.getDurationSeconds(), file.getFileSize(), file.getWidth(), file.getHeight(),
-                file.getCoverArtPath(), file.getParentPath(), file.getPlayCount(), file.getLastPlayed(), file.getComment(),
-                file.getChanged(), file.getLastScanned(), file.getChildrenLastUpdated(), file.isPresent(), VERSION, file.getPath());
+		int n = update(sql, file.getFolder(), file.getMediaType().name(),
+				file.getFormat(), file.getTitle(), file.getAlbumName(),
+				file.getArtist(), file.getAlbumArtist(), file.getDiscNumber(),
+				file.getTrackNumber(), file.getYear(), file.getGenre(),
+				file.getBitRate(), file.isVariableBitRate(),
+				file.getDurationSeconds(), file.getFileSize(), file.getWidth(),
+				file.getHeight(), file.getCoverArtPath(), file.getParentPath(),
+				file.getPlayCount(), file.getLastPlayed(), file.getComment(),
+				file.getChanged(), file.getLastScanned(),
+				file.getChildrenLastUpdated(), file.isPresent(), VERSION,
+				file.getRating(), file.getPath());
 
         if (n == 0) {
 
@@ -149,25 +164,36 @@ public class MediaFileDao extends AbstractDao {
                 file.setPlayCount(musicFileInfo.getPlayCount());
             }
 
-            update("insert into media_file (" + COLUMNS + ") values (" + questionMarks(COLUMNS) + ")", null,
-                    file.getPath(), file.getFolder(), file.getMediaType().name(), file.getFormat(), file.getTitle(), file.getAlbumName(), file.getArtist(),
-                    file.getAlbumArtist(), file.getDiscNumber(), file.getTrackNumber(), file.getYear(), file.getGenre(), file.getBitRate(),
-                    file.isVariableBitRate(), file.getDurationSeconds(), file.getFileSize(), file.getWidth(), file.getHeight(),
-                    file.getCoverArtPath(), file.getParentPath(), file.getPlayCount(), file.getLastPlayed(), file.getComment(),
-                    file.getCreated(), file.getChanged(), file.getLastScanned(),
-                    file.getChildrenLastUpdated(), file.isPresent(), VERSION);
+			update("insert into media_file (" + COLUMNS + ") values ("
+					+ questionMarks(COLUMNS) + ")", null, file.getPath(),
+					file.getFolder(), file.getMediaType().name(),
+					file.getFormat(), file.getTitle(), file.getAlbumName(),
+					file.getArtist(), file.getAlbumArtist(),
+					file.getDiscNumber(), file.getTrackNumber(),
+					file.getYear(), file.getGenre(), file.getBitRate(),
+					file.isVariableBitRate(), file.getDurationSeconds(),
+					file.getFileSize(), file.getWidth(), file.getHeight(),
+					file.getCoverArtPath(), file.getParentPath(),
+					file.getPlayCount(), file.getLastPlayed(),
+					file.getComment(), file.getCreated(), file.getChanged(),
+					file.getLastScanned(), file.getChildrenLastUpdated(),
+					file.isPresent(), VERSION, file.getRating());
         }
 
-        int id = queryForInt("select id from media_file where path=?", null, file.getPath());
+		int id = queryForInt("select id from media_file where path=?", null,
+				file.getPath());
         file.setId(id);
     }
 
     private MediaFile getMusicFileInfo(String path) {
-        return queryOne("select play_count, last_played, comment from music_file_info where path=?", musicFileInfoRowMapper, path);
+		return queryOne(
+				"select play_count, last_played, comment from music_file_info where path=?",
+				musicFileInfoRowMapper, path);
     }
 
     public void deleteMediaFile(String path) {
-        update("update media_file set present=false, children_last_updated=? where path=?", new Date(0L), path);
+		update("update media_file set present=false, children_last_updated=? where path=?",
+				new Date(0L), path);
     }
 
     public List<String> getGenres() {
@@ -177,123 +203,213 @@ public class MediaFileDao extends AbstractDao {
     /**
      * Returns the most frequently played albums.
      *
-     * @param offset Number of albums to skip.
-     * @param count  Maximum number of albums to return.
+	 * @param offset
+	 *            Number of albums to skip.
+	 * @param count
+	 *            Maximum number of albums to return.
      * @return The most frequently played albums.
      */
     public List<MediaFile> getMostFrequentlyPlayedAlbums(int offset, int count) {
-        return query("select " + COLUMNS + " from media_file where type=? and play_count > 0 and present " +
-                "order by play_count desc limit ? offset ?", rowMapper, ALBUM.name(), count, offset);
+		return query(
+				"select "
+						+ COLUMNS
+						+ " from media_file where type=? and play_count > 0 and present "
+						+ "order by play_count desc limit ? offset ?",
+				rowMapper, ALBUM.name(), count, offset);
     }
 
     /**
      * Returns the most recently played albums.
      *
-     * @param offset Number of albums to skip.
-     * @param count  Maximum number of albums to return.
+	 * @param offset
+	 *            Number of albums to skip.
+	 * @param count
+	 *            Maximum number of albums to return.
      * @return The most recently played albums.
      */
     public List<MediaFile> getMostRecentlyPlayedAlbums(int offset, int count) {
-        return query("select " + COLUMNS + " from media_file where type=? and last_played is not null and present " +
-                "order by last_played desc limit ? offset ?", rowMapper, ALBUM.name(), count, offset);
+		return query(
+				"select "
+						+ COLUMNS
+						+ " from media_file where type=? and last_played is not null and present "
+						+ "order by last_played desc limit ? offset ?",
+				rowMapper, ALBUM.name(), count, offset);
     }
 
     /**
      * Returns the most recently added albums.
      *
-     * @param offset Number of albums to skip.
-     * @param count  Maximum number of albums to return.
+	 * @param offset
+	 *            Number of albums to skip.
+	 * @param count
+	 *            Maximum number of albums to return.
      * @return The most recently added albums.
      */
     public List<MediaFile> getNewestAlbums(int offset, int count) {
-        return query("select " + COLUMNS + " from media_file where type=? and present order by created desc limit ? offset ?",
+		return query(
+				"select "
+						+ COLUMNS
+						+ " from media_file where type=? and present order by created desc limit ? offset ?",
                 rowMapper, ALBUM.name(), count, offset);
     }
 
     /**
      * Returns albums in alphabetical order.
      *
-     * @param offset   Number of albums to skip.
-     * @param count    Maximum number of albums to return.
-     * @param byArtist Whether to sort by artist name
+	 * @param offset
+	 *            Number of albums to skip.
+	 * @param count
+	 *            Maximum number of albums to return.
+	 * @param byArtist
+	 *            Whether to sort by artist name
      * @return Albums in alphabetical order.
      */
-    public List<MediaFile> getAlphabetialAlbums(int offset, int count, boolean byArtist) {
+	public List<MediaFile> getAlphabetialAlbums(int offset, int count,
+			boolean byArtist) {
         String orderBy = byArtist ? "artist, album" : "album";
-        return query("select " + COLUMNS + " from media_file where type=? and artist != '' and present order by " + orderBy + " limit ? offset ?",
-                rowMapper, ALBUM.name(), count, offset);
+		return query(
+				"select "
+						+ COLUMNS
+						+ " from media_file where type=? and artist != '' and present order by "
+						+ orderBy + " limit ? offset ?", rowMapper,
+				ALBUM.name(), count, offset);
     }
 
     public List<MediaFile> getSongsByGenre(String genre, int offset, int count) {
-        return query("select " + COLUMNS + " from media_file where type in (?,?,?) and genre=? and present limit ? offset ?",
-                rowMapper, MUSIC.name(), PODCAST.name(), AUDIOBOOK.name(), genre, count, offset);
+		return query(
+				"select "
+						+ COLUMNS
+						+ " from media_file where type in (?,?,?) and genre=? and present limit ? offset ?",
+				rowMapper, MUSIC.name(), PODCAST.name(), AUDIOBOOK.name(),
+				genre, count, offset);
     }
 
     /**
      * Returns the most recently starred albums.
      *
-     * @param offset   Number of albums to skip.
-     * @param count    Maximum number of albums to return.
-     * @param username Returns albums starred by this user.
+	 * @param offset
+	 *            Number of albums to skip.
+	 * @param count
+	 *            Maximum number of albums to return.
+	 * @param username
+	 *            Returns albums starred by this user.
      * @return The most recently starred albums for this user.
      */
-    public List<MediaFile> getStarredAlbums(int offset, int count, String username) {
-        return query("select " + prefix(COLUMNS, "media_file") + " from media_file, starred_media_file where media_file.id = starred_media_file.media_file_id and " +
-                "media_file.present and media_file.type=? and starred_media_file.username=? order by starred_media_file.created desc limit ? offset ?",
-                rowMapper, ALBUM.name(), username, count, offset);
+	public List<MediaFile> getStarredAlbums(int offset, int count,
+			String username) {
+		return query(
+				"select "
+						+ prefix(COLUMNS, "media_file")
+						+ " from media_file where rating > 0 and present and type=? limit ? offset ?",
+				rowMapper, ALBUM.name(), count, offset);
     }
 
     /**
      * Returns the most recently starred directories.
      *
-     * @param offset   Number of directories to skip.
-     * @param count    Maximum number of directories to return.
-     * @param username Returns directories starred by this user.
+	 * @param offset
+	 *            Number of directories to skip.
+	 * @param count
+	 *            Maximum number of directories to return.
+	 * @param username
+	 *            Returns directories starred by this user.
      * @return The most recently starred directories for this user.
      */
-    public List<MediaFile> getStarredDirectories(int offset, int count, String username) {
-        return query("select " + prefix(COLUMNS, "media_file") + " from media_file, starred_media_file where media_file.id = starred_media_file.media_file_id and " +
-                "media_file.present and media_file.type=? and starred_media_file.username=? order by starred_media_file.created desc limit ? offset ?",
-                rowMapper, DIRECTORY.name(), username, count, offset);
+	public List<MediaFile> getStarredDirectories(int offset, int count,
+			String username) {
+		return query(
+				"select "
+						+ prefix(COLUMNS, "media_file")
+						+ " from media_file where rating > 0 and present and type=? limit ? offset ?",
+				rowMapper, DIRECTORY.name(), count, offset);
     }
 
     /**
      * Returns the most recently starred files.
      *
-     * @param offset   Number of files to skip.
-     * @param count    Maximum number of files to return.
-     * @param username Returns files starred by this user.
+	 * @param offset
+	 *            Number of files to skip.
+	 * @param count
+	 *            Maximum number of files to return.
+	 * @param username
+	 *            Returns files starred by this user.
      * @return The most recently starred files for this user.
      */
-    public List<MediaFile> getStarredFiles(int offset, int count, String username) {
-        return query("select " + prefix(COLUMNS, "media_file") + " from media_file, starred_media_file where media_file.id = starred_media_file.media_file_id and " +
-                "media_file.present and media_file.type in (?,?,?,?) and starred_media_file.username=? order by starred_media_file.created desc limit ? offset ?",
-                rowMapper, MUSIC.name(), PODCAST.name(), AUDIOBOOK.name(), VIDEO.name(), username, count, offset);
+	public List<MediaFile> getStarredFiles(int offset, int count,
+			String username) {
+		return query(
+				"select "
+						+ prefix(COLUMNS, "media_file")
+						+ " from media_file where rating > 0 and present and type in (?,?,?,?) limit ? offset ?",
+				rowMapper, MUSIC.name(), PODCAST.name(), AUDIOBOOK.name(),
+				VIDEO.name(), count, offset);
     }
 
-    public void starMediaFile(int id, String username) {
-        unstarMediaFile(id, username);
-        update("insert into starred_media_file(media_file_id, username, created) values (?,?,?)", id, username, new Date());
+	public void starMediaFile(int id, int rating) {
+		update("update media_file set rating = ? where id = ?", rating, id);
+
+		// Update File
+		try {
+
+			long ratingWindows = RatingUtil.subsonicToWindows(rating);
+
+			MediaFile mediaFile = getMediaFile(id);
+
+			if (mediaFile.isFile()) {
+				AudioFile f = AudioFileIO.read(mediaFile.getFile());
+				Tag tag = f.getTag();
+
+				List<TagField> tagFields = tag.get("POPM");
+
+				if (tagFields.isEmpty()) {
+
+					FrameBodyPOPM frameBody = new FrameBodyPOPM();
+					frameBody.setEmailToUser("Windows Media Player 9 Series");
+					frameBody.setCounter(0);
+					frameBody.setRating(ratingWindows);
+
+					ID3v23Frame frame = new ID3v23Frame("POPM");
+					frame.setBody(frameBody);
+					tag.addField(frame);
+
+				} else {
+					ID3v23Frame frameOld = (ID3v23Frame) tagFields.get(0);
+					FrameBodyPOPM frameOldBody = (FrameBodyPOPM) frameOld
+							.getBody();
+					frameOldBody.setRating(ratingWindows);
     }
 
-    public void unstarMediaFile(int id, String username) {
-        update("delete from starred_media_file where media_file_id=? and username=?", id, username);
+				f.commit();
+			}
+
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
     }
 
     public Date getMediaFileStarredDate(int id, String username) {
-        return queryForDate("select created from starred_media_file where media_file_id=? and username=?", null, id, username);
+		return queryForDate(
+				"select created from starred_media_file where media_file_id=? and username=?",
+				null, id, username);
     }
 
     public void markPresent(String path, Date lastScanned) {
-        update("update media_file set present=?, last_scanned=? where path=?", true, lastScanned, path);
+		update("update media_file set present=?, last_scanned=? where path=?",
+				true, lastScanned, path);
     }
 
     public void markNonPresent(Date lastScanned) {
-        int minId = queryForInt("select top 1 id from media_file where last_scanned != ? and present", 0, lastScanned);
-        int maxId = queryForInt("select max(id) from media_file where last_scanned != ? and present", 0, lastScanned);
+		int minId = queryForInt(
+				"select top 1 id from media_file where last_scanned != ? and present",
+				0, lastScanned);
+		int maxId = queryForInt(
+				"select max(id) from media_file where last_scanned != ? and present",
+				0, lastScanned);
 
         final int batchSize = 1000;
-        Date childrenLastUpdated = new Date(0L);  // Used to force a children rescan if file is later resurrected.
+		Date childrenLastUpdated = new Date(0L); // Used to force a children
+													// rescan if file is later
+													// resurrected.
         for (int id = minId; id <= maxId; id += batchSize) {
             update("update media_file set present=false, children_last_updated=? where id between ? and ? and last_scanned != ? and present",
                     childrenLastUpdated, id, id + batchSize, lastScanned);
@@ -301,53 +417,44 @@ public class MediaFileDao extends AbstractDao {
     }
 
     public void expunge() {
-        int minId = queryForInt("select top 1 id from media_file where not present", 0);
-        int maxId = queryForInt("select max(id) from media_file where not present", 0);
+		int minId = queryForInt(
+				"select top 1 id from media_file where not present", 0);
+		int maxId = queryForInt(
+				"select max(id) from media_file where not present", 0);
 
         final int batchSize = 1000;
         for (int id = minId; id <= maxId; id += batchSize) {
-            update("delete from media_file where id between ? and ? and not present", id, id + batchSize);
+			update("delete from media_file where id between ? and ? and not present",
+					id, id + batchSize);
         }
         update("checkpoint");
     }
 
-    private static class MediaFileMapper implements ParameterizedRowMapper<MediaFile> {
+	private static class MediaFileMapper implements
+			ParameterizedRowMapper<MediaFile> {
         public MediaFile mapRow(ResultSet rs, int rowNum) throws SQLException {
-            return new MediaFile(
-                    rs.getInt(1),
-                    rs.getString(2),
-                    rs.getString(3),
-                    MediaType.valueOf(rs.getString(4)),
-                    rs.getString(5),
-                    rs.getString(6),
-                    rs.getString(7),
-                    rs.getString(8),
-                    rs.getString(9),
-                    rs.getInt(10) == 0 ? null : rs.getInt(10),
-                    rs.getInt(11) == 0 ? null : rs.getInt(11),
-                    rs.getInt(12) == 0 ? null : rs.getInt(12),
-                    rs.getString(13),
+			return new MediaFile(rs.getInt(1), rs.getString(2),
+					rs.getString(3), MediaType.valueOf(rs.getString(4)),
+					rs.getString(5), rs.getString(6), rs.getString(7),
+					rs.getString(8), rs.getString(9), rs.getInt(10) == 0 ? null
+							: rs.getInt(10), rs.getInt(11) == 0 ? null
+							: rs.getInt(11), rs.getInt(12) == 0 ? null
+							: rs.getInt(12), rs.getString(13),
                     rs.getInt(14) == 0 ? null : rs.getInt(14),
-                    rs.getBoolean(15),
-                    rs.getInt(16) == 0 ? null : rs.getInt(16),
-                    rs.getLong(17) == 0 ? null : rs.getLong(17),
-                    rs.getInt(18) == 0 ? null : rs.getInt(18),
-                    rs.getInt(19) == 0 ? null : rs.getInt(19),
-                    rs.getString(20),
-                    rs.getString(21),
-                    rs.getInt(22),
-                    rs.getTimestamp(23),
-                    rs.getString(24),
-                    rs.getTimestamp(25),
-                    rs.getTimestamp(26),
-                    rs.getTimestamp(27),
-                    rs.getTimestamp(28),
-                    rs.getBoolean(29),
-                    rs.getInt(30));
+					rs.getBoolean(15), rs.getInt(16) == 0 ? null
+							: rs.getInt(16), rs.getLong(17) == 0 ? null
+							: rs.getLong(17), rs.getInt(18) == 0 ? null
+							: rs.getInt(18), rs.getInt(19) == 0 ? null
+							: rs.getInt(19), rs.getString(20),
+					rs.getString(21), rs.getInt(22), rs.getTimestamp(23),
+					rs.getString(24), rs.getTimestamp(25), rs.getTimestamp(26),
+					rs.getTimestamp(27), rs.getTimestamp(28),
+					rs.getBoolean(29), rs.getInt(30), rs.getInt(31));
         }
     }
 
-    private static class MusicFileInfoMapper implements ParameterizedRowMapper<MediaFile> {
+	private static class MusicFileInfoMapper implements
+			ParameterizedRowMapper<MediaFile> {
         public MediaFile mapRow(ResultSet rs, int rowNum) throws SQLException {
             MediaFile file = new MediaFile();
             file.setPlayCount(rs.getInt(1));

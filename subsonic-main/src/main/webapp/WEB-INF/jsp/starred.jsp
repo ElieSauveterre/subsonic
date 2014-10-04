@@ -75,6 +75,7 @@
                     <c:param name="starEnabled" value="true"/>
                     <c:param name="starred" value="${not empty album.starredDate}"/>
                     <c:param name="asTable" value="true"/>
+                    <c:param name="rating" value="${album.rating}"/>
                 </c:import>
 
                 <td ${loopStatus.count % 2 == 1 ? "class='bgcolor2'" : ""} style="padding-left:0.25em;padding-right:1.25em">
@@ -109,6 +110,7 @@
                     <c:param name="starred" value="${not empty song.starredDate}"/>
                     <c:param name="video" value="${song.video and model.player.web}"/>
                     <c:param name="asTable" value="true"/>
+                    <c:param name="rating" value="${song.rating}"/>
                 </c:import>
 
                 <td ${loopStatus.count % 2 == 1 ? "class='bgcolor2'" : ""} style="padding-left:0.25em;padding-right:1.25em">

@@ -61,7 +61,8 @@ public class MainController extends ParameterizableViewController {
     private AdService adService;
 
     @Override
-    protected ModelAndView handleRequestInternal(HttpServletRequest request, HttpServletResponse response) throws Exception {
+	protected ModelAndView handleRequestInternal(HttpServletRequest request,
+			HttpServletResponse response) throws Exception {
         Map<String, Object> map = new HashMap<String, Object>();
 
         Player player = playerService.getPlayer(request, response);
@@ -81,7 +82,9 @@ public class MainController extends ParameterizableViewController {
             return new ModelAndView(new RedirectView("home.view?"));
         }
 
-        List<MediaFile> children = mediaFiles.size() == 1 ? mediaFileService.getChildrenOf(dir, true, true, true) : getMultiFolderChildren(mediaFiles);
+		List<MediaFile> children = mediaFiles.size() == 1 ? mediaFileService
+				.getChildrenOf(dir, true, true, true)
+				: getMultiFolderChildren(mediaFiles);
         String username = securityService.getCurrentUsername(request);
         UserSettings userSettings = settingsService.getUserSettings(username);
 
@@ -98,7 +101,8 @@ public class MainController extends ParameterizableViewController {
         map.put("multipleArtists", isMultipleArtists(children));
         map.put("visibility", userSettings.getMainVisibility());
         map.put("showAlbumYear", settingsService.isSortAlbumsByYear());
-        map.put("updateNowPlaying", request.getParameter("updateNowPlaying") != null);
+		map.put("updateNowPlaying",
+				request.getParameter("updateNowPlaying") != null);
         map.put("partyMode", userSettings.isPartyModeEnabled());
         map.put("brand", settingsService.getBrand());
         if (!settingsService.isLicenseValid()) {
@@ -113,25 +117,17 @@ public class MainController extends ParameterizableViewController {
             // Happens if Podcast directory is outside music folder.
         }
 
-        Integer userRating = ratingService.getRatingForUser(username, dir);
-        Double averageRating = ratingService.getAverageRating(dir);
-
-        if (userRating == null) {
-            userRating = 0;
+		if (mediaFiles.size() == 1) {
+			map.put("rating", mediaFiles.get(0).getRating());
         }
-
-        if (averageRating == null) {
-            averageRating = 0.0D;
-        }
-
-        map.put("userRating", 10 * userRating);
-        map.put("averageRating", Math.round(10.0D * averageRating));
-        map.put("starred", mediaFileService.getMediaFileStarredDate(dir.getId(), username) != null);
+		map.put("starred",
+				mediaFileService.getMediaFileStarredDate(dir.getId(), username) != null);
 
         CoverArtScheme scheme = player.getCoverArtScheme();
         if (scheme != CoverArtScheme.OFF) {
             List<MediaFile> coverArts = getCoverArts(dir, children);
-            int size = coverArts.size() > 1 ? scheme.getSize() : scheme.getSize() * 2;
+			int size = coverArts.size() > 1 ? scheme.getSize() : scheme
+					.getSize() * 2;
             map.put("coverArts", coverArts);
             map.put("coverArtSize", size);
             if (coverArts.isEmpty() && dir.isAlbum()) {
@@ -148,7 +144,8 @@ public class MainController extends ParameterizableViewController {
 
     private List<MediaFile> getMediaFiles(HttpServletRequest request) {
         List<MediaFile> mediaFiles = new ArrayList<MediaFile>();
-        for (String path : ServletRequestUtils.getStringParameters(request, "path")) {
+		for (String path : ServletRequestUtils.getStringParameters(request,
+				"path")) {
             MediaFile mediaFile = mediaFileService.getMediaFile(path);
             if (mediaFile != null) {
                 mediaFiles.add(mediaFile);
@@ -181,7 +178,8 @@ public class MainController extends ParameterizableViewController {
         return null;
     }
 
-    private List<MediaFile> getCoverArts(MediaFile dir, List<MediaFile> children) throws IOException {
+	private List<MediaFile> getCoverArts(MediaFile dir, List<MediaFile> children)
+			throws IOException {
         int limit = settingsService.getCoverArtLimit();
         if (limit == 0) {
             limit = Integer.MAX_VALUE;
@@ -205,13 +203,15 @@ public class MainController extends ParameterizableViewController {
         return coverArts;
     }
 
-    private List<MediaFile> getMultiFolderChildren(List<MediaFile> mediaFiles) throws IOException {
+	private List<MediaFile> getMultiFolderChildren(List<MediaFile> mediaFiles)
+			throws IOException {
         List<MediaFile> result = new ArrayList<MediaFile>();
         for (MediaFile mediaFile : mediaFiles) {
             if (mediaFile.isFile()) {
                 mediaFile = mediaFileService.getParentOf(mediaFile);
             }
-            result.addAll(mediaFileService.getChildrenOf(mediaFile, true, true, true));
+			result.addAll(mediaFileService.getChildrenOf(mediaFile, true, true,
+					true));
         }
         return result;
     }
@@ -231,11 +231,13 @@ public class MainController extends ParameterizableViewController {
         return result;
     }
 
-    private void setPreviousAndNextAlbums(MediaFile dir, Map<String, Object> map) throws IOException {
+	private void setPreviousAndNextAlbums(MediaFile dir, Map<String, Object> map)
+			throws IOException {
         MediaFile parent = mediaFileService.getParentOf(dir);
 
         if (dir.isAlbum() && !mediaFileService.isRoot(parent)) {
-            List<MediaFile> sieblings = mediaFileService.getChildrenOf(parent, false, true, true);
+			List<MediaFile> sieblings = mediaFileService.getChildrenOf(parent,
+					false, true, true);
 
             int index = sieblings.indexOf(dir);
             if (index > 0) {
@@ -261,7 +263,8 @@ public class MainController extends ParameterizableViewController {
             return false;
         }
 
-        // Fuzzily compare artist names, allowing for some differences in spelling, whitespace etc.
+		// Fuzzily compare artist names, allowing for some differences in
+		// spelling, whitespace etc.
         List<String> artistList = new ArrayList<String>(artists);
         for (String artist : artistList) {
             if (StringUtils.getLevenshteinDistance(artist, artistList.get(0)) > 3) {
