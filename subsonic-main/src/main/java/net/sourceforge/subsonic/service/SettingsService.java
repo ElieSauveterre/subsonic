@@ -74,7 +74,7 @@ public class SettingsService {
     private static final File SUBSONIC_HOME_OTHER = new File("/var/subsonic");
 
     // Number of free trial days.
-    private static final long TRIAL_DAYS = 30L;
+    public static final long TRIAL_DAYS = 30L;
 
     // Global settings.
     private static final String KEY_INDEX_STRING = "IndexString";
@@ -130,6 +130,7 @@ public class SettingsService {
     private static final String KEY_SORT_ALBUMS_BY_YEAR = "SortAlbumsByYear";
     private static final String KEY_MEDIA_LIBRARY_STATISTICS = "MediaLibraryStatistics";
     private static final String KEY_TRIAL_EXPIRES = "TrialExpires";
+    private static final String KEY_DLNA_ENABLED = "DlnaEnabled";
 
     // Default values.
     private static final String DEFAULT_INDEX_STRING = "A B C D E F G H I J K L M N O P Q R S T U V W X-Z(XYZ)";
@@ -139,7 +140,7 @@ public class SettingsService {
     private static final String DEFAULT_MUSIC_FILE_TYPES = "mp3 ogg oga aac m4a flac wav wma aif aiff ape mpc shn";
     private static final String DEFAULT_VIDEO_FILE_TYPES = "flv avi mpg mpeg mp4 m4v mkv mov wmv ogv divx m2ts";
     private static final String DEFAULT_COVER_ART_FILE_TYPES = "cover.jpg folder.jpg jpg jpeg gif png";
-    private static final int DEFAULT_COVER_ART_LIMIT = 30;
+    private static final int DEFAULT_COVER_ART_LIMIT = 50;
     private static final String DEFAULT_WELCOME_TITLE = "Welcome to Subsonic!";
     private static final String DEFAULT_WELCOME_SUBTITLE = null;
     private static final String DEFAULT_WELCOME_MESSAGE = "__Welcome to Subsonic!__\n" +
@@ -191,6 +192,7 @@ public class SettingsService {
     private static final boolean DEFAULT_SORT_ALBUMS_BY_YEAR = true;
     private static final String DEFAULT_MEDIA_LIBRARY_STATISTICS = "0 0 0 0 0";
     private static final String DEFAULT_TRIAL_EXPIRES = null;
+    private static final boolean DEFAULT_DLNA_ENABLED = true;
 
     // Array of obsolete keys.  Used to clean property file.
     private static final List<String> OBSOLETE_KEYS = Arrays.asList("PortForwardingPublicPort", "PortForwardingLocalPort",
@@ -646,10 +648,6 @@ public class SettingsService {
         return true;
     }
 
-    public Date getLicenseExpires() {
-        return licenseExpires;
-    }
-
     public LicenseInfo getLicenseInfo() {
         Date trialExpires = getTrialExpires();
         Date now = new Date();
@@ -918,6 +916,8 @@ public class SettingsService {
                     String[] elements = StringUtil.split(line);
                     if (elements.length == 2) {
                         themes.add(new Theme(elements[0], elements[1]));
+                    } else if (elements.length == 3) {
+                        themes.add(new Theme(elements[0], elements[1], elements[2]));
                     } else {
                         LOG.warn("Failed to parse theme from line: [" + line + "].");
                     }
@@ -1211,6 +1211,14 @@ public class SettingsService {
      */
     public void setCustomAvatar(Avatar avatar, String username) {
         avatarDao.setCustomAvatar(avatar, username);
+    }
+
+    public boolean isDlnaEnabled() {
+        return getBoolean(KEY_DLNA_ENABLED, DEFAULT_DLNA_ENABLED);
+    }
+
+    public void setDlnaEnabled(boolean dlnaEnabled) {
+        setBoolean(KEY_DLNA_ENABLED, dlnaEnabled);
     }
 
     private void setProperty(String key, String value) {

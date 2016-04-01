@@ -1,28 +1,18 @@
-<%@ page language="java" contentType="text/html; charset=utf-8"
-	pageEncoding="iso-8859-1"%>
+<%@ page language="java" contentType="text/html; charset=utf-8" pageEncoding="iso-8859-1"%>
 <!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
-<html>
-<head>
+<html><head>
     <%@ include file="head.jsp" %>
     <%@ include file="jquery.jsp" %>
-<script type="text/javascript"
-	src="<c:url value="/dwr/interface/nowPlayingService.js"/>"></script>
-<script type="text/javascript"
-	src="<c:url value="/dwr/interface/playQueueService.js"/>"></script>
-<script type="text/javascript"
-	src="<c:url value="/dwr/interface/playlistService.js"/>"></script>
+    <script type="text/javascript" src="<c:url value="/dwr/interface/nowPlayingService.js"/>"></script>
+    <script type="text/javascript" src="<c:url value="/dwr/interface/playQueueService.js"/>"></script>
+    <script type="text/javascript" src="<c:url value="/dwr/interface/playlistService.js"/>"></script>
     <script type="text/javascript" src="<c:url value="/dwr/engine.js"/>"></script>
     <script type="text/javascript" src="<c:url value="/dwr/util.js"/>"></script>
-<script type="text/javascript"
-	src="<c:url value="/script/swfobject.js"/>"></script>
-<script type="text/javascript"
-	src="<c:url value="/script/webfx/range.js"/>"></script>
-<script type="text/javascript"
-	src="<c:url value="/script/webfx/timer.js"/>"></script>
-<script type="text/javascript"
-	src="<c:url value="/script/webfx/slider.js"/>"></script>
-<link type="text/css" rel="stylesheet"
-	href="<c:url value="/script/webfx/luna.css"/>">
+    <script type="text/javascript" src="<c:url value="/script/swfobject.js"/>"></script>
+    <script type="text/javascript" src="<c:url value="/script/webfx/range.js"/>"></script>
+    <script type="text/javascript" src="<c:url value="/script/webfx/timer.js"/>"></script>
+    <script type="text/javascript" src="<c:url value="/script/webfx/slider.js"/>"></script>
+    <link type="text/css" rel="stylesheet" href="<c:url value="/script/webfx/luna.css"/>">
 </head>
 
 <body class="bgcolor2 playlistframe" onload="init()">
@@ -32,7 +22,6 @@
     var songs = null;
     var currentAlbumUrl = null;
     var currentStreamUrl = null;
-    var startPlayer = false;
     var repeatEnabled = false;
     var slider = null;
 
@@ -150,20 +139,23 @@
         skip(parseInt(getCurrentSongIndex()) - 1);
     }
     function onPlay(id) {
-        startPlayer = true;
         playQueueService.play(id, playQueueCallback);
     }
-    function onPlayPlaylist(id) {
-        startPlayer = true;
-        playQueueService.playPlaylist(id, playQueueCallback);
+    function onPlayPlaylist(id, index) {
+        index = index || 0;
+        playQueueService.playPlaylist(id, index, playQueueCallback);
+    }
+    function onPlayStarred() {
+        playQueueService.playStarred(playQueueCallback);
     }
     function onPlayRandom(id, count) {
-        startPlayer = true;
         playQueueService.playRandom(id, count, playQueueCallback);
     }
     function onAdd(id) {
-        startPlayer = false;
         playQueueService.add(id, playQueueCallback);
+    }
+    function onAddNext(id) {
+        playQueueService.addAt(id, getCurrentSongIndex() + 1, playQueueCallback);
     }
     function onShuffle() {
         playQueueService.shuffle(playQueueCallback);
@@ -208,8 +200,9 @@
         playQueueService.sortByAlbum(playQueueCallback);
     }
     function onSavePlaylist() {
-        playQueueService.savePlaylist(function () {
+        playlistService.createPlaylistForPlayQueue(function () {
             top.left.updatePlaylists();
+            top.left.showAllPlaylists();
             $().toastmessage("showSuccessToast", "<fmt:message key="playlist.toast.saveasplaylist"/>");
         });
     }
@@ -341,15 +334,14 @@
         }
 
     <c:if test="${model.player.web}">
-        triggerPlayer();
+        triggerPlayer(playQueue.startPlayerAt);
     </c:if>
     }
 
-    function triggerPlayer() {
-        if (startPlayer) {
-            startPlayer = false;
-            if (songs.length > 0) {
-                skip(0);
+    function triggerPlayer(startPlayerAt) {
+        if (startPlayerAt != -1) {
+            if (songs.length > startPlayerAt) {
+                skip(startPlayerAt);
             }
         }
         updateCurrentImage();
@@ -424,6 +416,7 @@
 
     <!-- actionSelected() is invoked when the users selects from the "More actions..." combo box. -->
     function actionSelected(id) {
+        var selectedIndexes = getSelectedIndexes();
         if (id == "top") {
             return;
         } else if (id == "savePlaylist") {
@@ -444,9 +437,9 @@
             selectAll(false);
         } else if (id == "removeSelected") {
             onRemoveSelected();
-        } else if (id == "download") {
-            location.href = "download.view?player=${model.player.id}&" + getSelectedIndexes();
-        } else if (id == "appendPlaylist") {
+        } else if (id == "download" && selectedIndexes != "") {
+            location.href = "download.view?player=${model.player.id}&" + selectedIndexes;
+        } else if (id == "appendPlaylist" && selectedIndexes != "") {
             onAppendPlaylist();
         }
         $("#moreActions").prop("selectedIndex", 0);
@@ -474,45 +467,36 @@
 
 </script>
 
-	<div class="bgcolor2"
-		style="position: fixed; top: 0; width: 100%; padding-top: 0.5em">
+<div class="bgcolor2" style="position:fixed; top:0; width:100%;padding-top:0.5em">
     <table style="white-space:nowrap;">
         <tr style="white-space:nowrap;">
             <c:if test="${model.user.settingsRole}">
-					<td><select name="player"
-						onchange="location='playQueue.view?player=' + options[selectedIndex].value;">
+                <td><select name="player" onchange="location='playQueue.view?player=' + options[selectedIndex].value;">
                     <c:forEach items="${model.players}" var="player">
-								<option ${player.id eq model.player.id ? "selected" : ""}
-									value="${player.id}">${player.shortDescription}</option>
+                        <option ${player.id eq model.player.id ? "selected" : ""} value="${player.id}">${player.shortDescription}</option>
                     </c:forEach>
                 </select></td>
             </c:if>
             <c:if test="${model.player.web}">
-					<td
-						style="width: 340px; height: 24px; padding-left: 10px; padding-right: 10px"><div
-							id="placeholder">
-							<a href="http://www.adobe.com/go/getflashplayer" target="_blank"><fmt:message
-									key="playlist.getflash" /></a>
+                <td style="width:340px; height:24px;padding-left:10px;padding-right:10px"><div id="placeholder">
+                    <a href="http://www.adobe.com/go/getflashplayer" target="_blank"><fmt:message key="playlist.getflash"/></a>
                 </div></td>
             </c:if>
 
             <c:if test="${model.user.streamRole and not model.player.web}">
-					<td style="white-space: nowrap;" id="stop"><b><a
-							href="javascript:void(0)" onclick="onStop()"><fmt:message
-									key="playlist.stop" /></a></b> |</td>
-					<td style="white-space: nowrap;" id="start"><b><a
-							href="javascript:void(0)" onclick="onStart()"><fmt:message
-									key="playlist.start" /></a></b> |</td>
+                <td style="white-space:nowrap;" id="stop"><span class="header"><b><a href="javascript:void(0)" onclick="onStop()"><fmt:message key="playlist.stop"/></a></b></span>  | </td>
+                <td style="white-space:nowrap;" id="start"><span class="header"><b><a href="javascript:void(0)" onclick="onStart()"><fmt:message key="playlist.start"/></a></b></span>  | </td>
             </c:if>
 
             <c:if test="${model.player.jukebox}">
-					<td style="white-space: nowrap;"><img
-						src="<spring:theme code="volumeImage"/>" alt=""></td>
+                <td style="white-space:nowrap;">
+                    <img src="<spring:theme code="volumeImage"/>" alt="">
+                </td>
                 <td style="white-space:nowrap;">
                     <div class="slider bgcolor2" id="slider-1" style="width:90px">
-							<input class="slider-input" id="slider-input-1"
-								name="slider-input-1">
-						</div> <script type="text/javascript">
+                        <input class="slider-input" id="slider-input-1" name="slider-input-1">
+                    </div>
+                    <script type="text/javascript">
 
                         var updateGainTimeoutId = 0;
                         slider = new Slider(document.getElementById("slider-1"), document.getElementById("slider-input-1"));
@@ -530,86 +514,62 @@
             </c:if>
 
             <c:if test="${model.player.web}">
-					<td style="white-space: nowrap;"><a href="javascript:void(0)"
-						onclick="onPrevious()"><b>&laquo;</b></a></td>
-					<td style="white-space: nowrap;"><a href="javascript:void(0)"
-						onclick="onNext(false)"><b>&raquo;</b></a> |</td>
+                <td><span class="header">
+                    <a href="javascript:void(0)" onclick="onPrevious()"><img src="<spring:theme code="backImage"/>" alt=""></a></span>
+                </td>
+                <td><span class="header">
+                    <a href="javascript:void(0)" onclick="onNext(false)"><img src="<spring:theme code="forwardImage"/>" alt=""></a></span>
+                </td>
             </c:if>
 
-				<td style="white-space: nowrap;"><a href="javascript:void(0)"
-					onclick="onClear()"><fmt:message key="playlist.clear" /></a> |</td>
-				<td style="white-space: nowrap;"><a href="javascript:void(0)"
-					onclick="onShuffle()"><fmt:message key="playlist.shuffle" /></a> |</td>
+            <td style="white-space:nowrap;"><span class="header"><a href="javascript:void(0)" onclick="onClear()"><fmt:message key="playlist.clear"/></a></span> |</td>
+            <td style="white-space:nowrap;"><span class="header"><a href="javascript:void(0)" onclick="onShuffle()"><fmt:message key="playlist.shuffle"/></a></span> |</td>
 
-				<c:if
-					test="${model.player.web or model.player.jukebox or model.player.external}">
-					<td style="white-space: nowrap;"><a href="javascript:void(0)"
-						onclick="onToggleRepeat()"><span id="toggleRepeat"><fmt:message
-									key="playlist.repeat_on" /></span></a> |</td>
+            <c:if test="${model.player.web or model.player.jukebox or model.player.external}">
+                <td style="white-space:nowrap;"><span class="header"><a href="javascript:void(0)" onclick="onToggleRepeat()"><span id="toggleRepeat"><fmt:message key="playlist.repeat_on"/></span></a></span>  |</td>
             </c:if>
 
-				<td style="white-space: nowrap;"><a href="javascript:void(0)"
-					onclick="onUndo()"><fmt:message key="playlist.undo" /></a> |</td>
+            <td style="white-space:nowrap;"><span class="header"><a href="javascript:void(0)" onclick="onUndo()"><fmt:message key="playlist.undo"/></a></span>  |</td>
 
             <c:if test="${model.user.settingsRole}">
-					<td style="white-space: nowrap;"><a
-						href="playerSettings.view?id=${model.player.id}" target="main"><fmt:message
-								key="playlist.settings" /></a> |</td>
+                <td style="white-space:nowrap;"><span class="header"><a href="playerSettings.view?id=${model.player.id}" target="main"><fmt:message key="playlist.settings"/></a></span>  |</td>
             </c:if>
 
-				<td style="white-space: nowrap;"><select id="moreActions"
-					onchange="actionSelected(this.options[selectedIndex].id)">
-						<option id="top" selected="selected"><fmt:message
-								key="playlist.more" /></option>
-						<option style="color: blue;"><fmt:message
-								key="playlist.more.playlist" /></option>
-						<option id="savePlaylist">&nbsp;&nbsp;&nbsp;&nbsp;
-							<fmt:message key="playlist.save" /></option>
+            <td style="white-space:nowrap;"><select id="moreActions" onchange="actionSelected(this.options[selectedIndex].id)">
+                <option id="top" selected="selected"><fmt:message key="playlist.more"/></option>
+                <option style="color:blue;"><fmt:message key="playlist.more.playlist"/></option>
+                <option id="savePlaylist">&nbsp;&nbsp;&nbsp;&nbsp;<fmt:message key="playlist.save"/></option>
                 <c:if test="${model.user.downloadRole}">
-							<option id="downloadPlaylist">&nbsp;&nbsp;&nbsp;&nbsp;
-								<fmt:message key="common.download" /></option>
+                    <option id="downloadPlaylist">&nbsp;&nbsp;&nbsp;&nbsp;<fmt:message key="common.download"/></option>
                 </c:if>
                 <c:if test="${model.user.shareRole}">
-							<option id="sharePlaylist">&nbsp;&nbsp;&nbsp;&nbsp;
-								<fmt:message key="main.more.share" /></option>
+                    <option id="sharePlaylist">&nbsp;&nbsp;&nbsp;&nbsp;<fmt:message key="main.more.share"/></option>
                 </c:if>
-						<option id="sortByTrack">&nbsp;&nbsp;&nbsp;&nbsp;
-							<fmt:message key="playlist.more.sortbytrack" /></option>
-						<option id="sortByAlbum">&nbsp;&nbsp;&nbsp;&nbsp;
-							<fmt:message key="playlist.more.sortbyalbum" /></option>
-						<option id="sortByArtist">&nbsp;&nbsp;&nbsp;&nbsp;
-							<fmt:message key="playlist.more.sortbyartist" /></option>
-						<option style="color: blue;"><fmt:message
-								key="playlist.more.selection" /></option>
-						<option id="selectAll">&nbsp;&nbsp;&nbsp;&nbsp;
-							<fmt:message key="playlist.more.selectall" /></option>
-						<option id="selectNone">&nbsp;&nbsp;&nbsp;&nbsp;
-							<fmt:message key="playlist.more.selectnone" /></option>
-						<option id="removeSelected">&nbsp;&nbsp;&nbsp;&nbsp;
-							<fmt:message key="playlist.remove" /></option>
+                <option id="sortByTrack">&nbsp;&nbsp;&nbsp;&nbsp;<fmt:message key="playlist.more.sortbytrack"/></option>
+                <option id="sortByAlbum">&nbsp;&nbsp;&nbsp;&nbsp;<fmt:message key="playlist.more.sortbyalbum"/></option>
+                <option id="sortByArtist">&nbsp;&nbsp;&nbsp;&nbsp;<fmt:message key="playlist.more.sortbyartist"/></option>
+                <option style="color:blue;"><fmt:message key="playlist.more.selection"/></option>
+                <option id="selectAll">&nbsp;&nbsp;&nbsp;&nbsp;<fmt:message key="playlist.more.selectall"/></option>
+                <option id="selectNone">&nbsp;&nbsp;&nbsp;&nbsp;<fmt:message key="playlist.more.selectnone"/></option>
+                <option id="removeSelected">&nbsp;&nbsp;&nbsp;&nbsp;<fmt:message key="playlist.remove"/></option>
                 <c:if test="${model.user.downloadRole}">
-							<option id="download">&nbsp;&nbsp;&nbsp;&nbsp;
-								<fmt:message key="common.download" /></option>
+                    <option id="download">&nbsp;&nbsp;&nbsp;&nbsp;<fmt:message key="common.download"/></option>
                 </c:if>
-						<option id="appendPlaylist">&nbsp;&nbsp;&nbsp;&nbsp;
-							<fmt:message key="playlist.append" /></option>
-				</select></td>
+                <option id="appendPlaylist">&nbsp;&nbsp;&nbsp;&nbsp;<fmt:message key="playlist.append"/></option>
+            </select>
+            </td>
 
-			</tr>
-		</table>
+        </tr></table>
 </div>
 
 <div style="height:3.2em"></div>
 
-	<p id="empty">
-		<em><fmt:message key="playlist.empty" /></em>
-	</p>
+<p id="empty"><em><fmt:message key="playlist.empty"/></em></p>
 
 <table style="border-collapse:collapse;white-space:nowrap;">
     <tbody id="playlistBody">
-			<tr id="pattern"
-				style="display: none; margin: 0; padding: 0; border: 0">
-				<td class="bgcolor2"><a href="javascript:void(0)"><img
+        <tr id="pattern" style="display:none;margin:0;padding:0;border:0">
+            <td class="bgcolor2"><a href="javascript:void(0)"><img
 						id="starSong_1_" onclick="onStar(this.id.substring(11) - 1, 1)"
 						src="<spring:theme code="ratingOffImage"/>" alt=""></a> <a
 					href="javascript:void(0)"><img id="starSong_2_"
@@ -624,86 +584,66 @@
 					href="javascript:void(0)"><img id="starSong_5_"
 						onclick="onStar(this.id.substring(11) - 1, 5)"
 						src="<spring:theme code="ratingOffImage"/>" alt=""></a></td>
-				<td class="bgcolor2"><a href="javascript:void(0)"> <img
-						id="removeSong" onclick="onRemove(this.id.substring(10) - 1)"
-						src="<spring:theme code="removeImage"/>"
-						alt="<fmt:message key="playlist.remove"/>"
-						title="<fmt:message key="playlist.remove"/>"></a></td>
-				<td class="bgcolor2"><a href="javascript:void(0)"> <img
-						id="up" onclick="onUp(this.id.substring(2) - 1)"
-						src="<spring:theme code="upImage"/>"
-						alt="<fmt:message key="playlist.up"/>"
-						title="<fmt:message key="playlist.up"/>"></a></td>
-				<td class="bgcolor2"><a href="javascript:void(0)"> <img
-						id="down" onclick="onDown(this.id.substring(4) - 1)"
-						src="<spring:theme code="downImage"/>"
-						alt="<fmt:message key="playlist.down"/>"
-						title="<fmt:message key="playlist.down"/>"></a></td>
+            <td class="bgcolor2"><a href="javascript:void(0)">
+                <img id="removeSong" onclick="onRemove(this.id.substring(10) - 1)" src="<spring:theme code="removeImage"/>"
+                     alt="<fmt:message key="playlist.remove"/>" title="<fmt:message key="playlist.remove"/>"></a></td>
+            <td class="bgcolor2"><a href="javascript:void(0)">
+                <img id="up" onclick="onUp(this.id.substring(2) - 1)" src="<spring:theme code="upImage"/>"
+                     alt="<fmt:message key="playlist.up"/>" title="<fmt:message key="playlist.up"/>"></a></td>
+            <td class="bgcolor2"><a href="javascript:void(0)">
+                <img id="down" onclick="onDown(this.id.substring(4) - 1)" src="<spring:theme code="downImage"/>"
+                     alt="<fmt:message key="playlist.down"/>" title="<fmt:message key="playlist.down"/>"></a></td>
 
-				<td class="bgcolor2" style="padding-left: 0.1em"><input
-					type="checkbox" class="checkbox" id="songIndex"></td>
+            <td class="bgcolor2" style="padding-left: 0.1em"><input type="checkbox" class="checkbox" id="songIndex"></td>
             <td style="padding-right:0.25em"></td>
 
             <c:if test="${model.visibility.trackNumberVisible}">
-					<td style="padding-right: 0.5em; text-align: right"><span
-						class="detail" id="trackNumber">1</span></td>
+                <td style="padding-right:0.5em;text-align:right"><span class="detail" id="trackNumber">1</span></td>
             </c:if>
 
-				<td style="padding-right: 1.25em"><img id="currentImage"
-					src="<spring:theme code="currentImage"/>" alt=""
-					style="display: none"> <c:choose>
+            <td style="padding-right:1.25em">
+                <img id="currentImage" src="<spring:theme code="currentImage"/>" alt="" style="display:none;padding-right: 0.5em">
+                <c:choose>
                     <c:when test="${model.player.externalWithPlaylist}">
-                        <span id="title">Title</span>
+                        <span id="title" class="songTitle">Title</span>
                     </c:when>
                     <c:otherwise>
-                        <a id="titleUrl" href="javascript:void(0)">Title</a>
+                        <span class="songTitle"><a id="titleUrl" href="javascript:void(0)">Title</a></span>
                     </c:otherwise>
-					</c:choose></td>
+                </c:choose>
+            </td>
 
             <c:if test="${model.visibility.albumVisible}">
-					<td style="padding-right: 1.25em"><a id="albumUrl"
-						target="main"><span id="album" class="detail">Album</span></a></td>
+                <td style="padding-right:1.25em"><a id="albumUrl" target="main"><span id="album" class="detail">Album</span></a></td>
             </c:if>
             <c:if test="${model.visibility.artistVisible}">
-					<td style="padding-right: 1.25em"><span id="artist"
-						class="detail">Artist</span></td>
+                <td style="padding-right:1.25em"><span id="artist" class="detail">Artist</span></td>
             </c:if>
             <c:if test="${model.visibility.genreVisible}">
-					<td style="padding-right: 1.25em"><span id="genre"
-						class="detail">Genre</span></td>
+                <td style="padding-right:1.25em"><span id="genre" class="detail">Genre</span></td>
             </c:if>
             <c:if test="${model.visibility.yearVisible}">
-					<td style="padding-right: 1.25em"><span id="year"
-						class="detail">Year</span></td>
+                <td style="padding-right:1.25em"><span id="year" class="detail">Year</span></td>
             </c:if>
             <c:if test="${model.visibility.formatVisible}">
-					<td style="padding-right: 1.25em"><span id="format"
-						class="detail">Format</span></td>
+                <td style="padding-right:1.25em"><span id="format" class="detail">Format</span></td>
             </c:if>
             <c:if test="${model.visibility.fileSizeVisible}">
-					<td style="padding-right: 1.25em; text-align: right;"><span
-						id="fileSize" class="detail">Format</span></td>
+                <td style="padding-right:1.25em;text-align:right;"><span id="fileSize" class="detail">Format</span></td>
             </c:if>
             <c:if test="${model.visibility.durationVisible}">
-					<td style="padding-right: 1.25em; text-align: right;"><span
-						id="duration" class="detail">Duration</span></td>
+                <td style="padding-right:1.25em;text-align:right;"><span id="duration" class="detail">Duration</span></td>
             </c:if>
             <c:if test="${model.visibility.bitRateVisible}">
-					<td style="padding-right: 0.25em"><span id="bitRate"
-						class="detail">Bit Rate</span></td>
+                <td style="padding-right:0.25em"><span id="bitRate" class="detail">Bit Rate</span></td>
             </c:if>
         </tr>
     </tbody>
 </table>
 
-	<div id="dialog-select-playlist"
-		title="<fmt:message key="main.addtoplaylist.title"/>"
-		style="display: none;">
-		<p>
-			<fmt:message key="main.addtoplaylist.text" />
-		</p>
+<div id="dialog-select-playlist" title="<fmt:message key="main.addtoplaylist.title"/>" style="display: none;">
+    <p><fmt:message key="main.addtoplaylist.text"/></p>
     <div id="dialog-select-playlist-list"></div>
 </div>
 
-</body>
-</html>
+</body></html>

@@ -49,7 +49,6 @@ public class StarService {
         return user.getUsername();
     }
 
-
     public void setSecurityService(SecurityService securityService) {
         this.securityService = securityService;
     }

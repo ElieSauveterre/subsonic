@@ -18,24 +18,27 @@
  */
 package net.sourceforge.subsonic.ajax;
 
+import net.sf.ehcache.Ehcache;
+import net.sf.ehcache.Element;
+import net.sourceforge.subsonic.dao.MediaFileDao;
+import net.sourceforge.subsonic.domain.MediaFile;
+import net.sourceforge.subsonic.domain.Player;
+import net.sourceforge.subsonic.domain.Playlist;
+import net.sourceforge.subsonic.i18n.SubsonicLocaleResolver;
+import net.sourceforge.subsonic.service.MediaFileService;
+import net.sourceforge.subsonic.service.PlayerService;
+import net.sourceforge.subsonic.service.SecurityService;
+import net.sourceforge.subsonic.service.SettingsService;
+import org.directwebremoting.WebContextFactory;
+
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
 import java.text.DateFormat;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.Locale;
-
-import javax.servlet.http.HttpServletRequest;
-
-import net.sf.ehcache.Ehcache;
-import net.sf.ehcache.Element;
-import net.sourceforge.subsonic.dao.MediaFileDao;
-import net.sourceforge.subsonic.service.SettingsService;
-import org.directwebremoting.WebContextFactory;
-
-import net.sourceforge.subsonic.domain.MediaFile;
-import net.sourceforge.subsonic.domain.Playlist;
-import net.sourceforge.subsonic.service.MediaFileService;
-import net.sourceforge.subsonic.service.SecurityService;
+import java.util.ResourceBundle;
 
 /**
  * Provides AJAX-enabled services for manipulating playlists.
@@ -50,25 +53,24 @@ public class PlaylistService {
     private net.sourceforge.subsonic.service.PlaylistService playlistService;
     private MediaFileDao mediaFileDao;
     private SettingsService settingsService;
+    private PlayerService playerService;
+    private SubsonicLocaleResolver localeResolver;
 	private Ehcache mediaFileMemoryCache;
 
     public List<Playlist> getReadablePlaylists() {
-		HttpServletRequest request = WebContextFactory.get()
-				.getHttpServletRequest();
+        HttpServletRequest request = WebContextFactory.get().getHttpServletRequest();
         String username = securityService.getCurrentUsername(request);
         return playlistService.getReadablePlaylistsForUser(username);
     }
 
     public List<Playlist> getWritablePlaylists() {
-		HttpServletRequest request = WebContextFactory.get()
-				.getHttpServletRequest();
+        HttpServletRequest request = WebContextFactory.get().getHttpServletRequest();
         String username = securityService.getCurrentUsername(request);
         return playlistService.getWritablePlaylistsForUser(username);
     }
 
     public PlaylistInfo getPlaylist(int id) {
-		HttpServletRequest request = WebContextFactory.get()
-				.getHttpServletRequest();
+        HttpServletRequest request = WebContextFactory.get().getHttpServletRequest();
 
         Playlist playlist = playlistService.getPlaylist(id);
         List<MediaFile> files = playlistService.getFilesInPlaylist(id);
@@ -79,22 +81,60 @@ public class PlaylistService {
     }
 
     public List<Playlist> createEmptyPlaylist() {
-		HttpServletRequest request = WebContextFactory.get()
-				.getHttpServletRequest();
-        Locale locale = settingsService.getLocale();
-		DateFormat dateFormat = DateFormat.getDateTimeInstance(
-				DateFormat.MEDIUM, DateFormat.SHORT, locale);
+        HttpServletRequest request = WebContextFactory.get().getHttpServletRequest();
+        Locale locale = localeResolver.resolveLocale(request);
+        DateFormat dateFormat = DateFormat.getDateTimeInstance(DateFormat.MEDIUM, DateFormat.SHORT, locale);
 
         Date now = new Date();
         Playlist playlist = new Playlist();
         playlist.setUsername(securityService.getCurrentUsername(request));
         playlist.setCreated(now);
         playlist.setChanged(now);
-        playlist.setPublic(false);
+        playlist.setShared(false);
         playlist.setName(dateFormat.format(now));
 
         playlistService.createPlaylist(playlist);
         return getReadablePlaylists();
+    }
+
+    public void createPlaylistForPlayQueue() {
+        HttpServletRequest request = WebContextFactory.get().getHttpServletRequest();
+        HttpServletResponse response = WebContextFactory.get().getHttpServletResponse();
+        Player player = playerService.getPlayer(request, response);
+        Locale locale = localeResolver.resolveLocale(request);
+        DateFormat dateFormat = DateFormat.getDateTimeInstance(DateFormat.MEDIUM, DateFormat.SHORT, locale);
+
+        Date now = new Date();
+        Playlist playlist = new Playlist();
+        playlist.setUsername(securityService.getCurrentUsername(request));
+        playlist.setCreated(now);
+        playlist.setChanged(now);
+        playlist.setShared(false);
+        playlist.setName(dateFormat.format(now));
+
+        playlistService.createPlaylist(playlist);
+        playlistService.setFilesInPlaylist(playlist.getId(), player.getPlayQueue().getFiles());
+    }
+
+    public void createPlaylistForStarredSongs() {
+        HttpServletRequest request = WebContextFactory.get().getHttpServletRequest();
+        Locale locale = localeResolver.resolveLocale(request);
+        DateFormat dateFormat = DateFormat.getDateTimeInstance(DateFormat.MEDIUM, DateFormat.SHORT, locale);
+
+        Date now = new Date();
+        Playlist playlist = new Playlist();
+        String username = securityService.getCurrentUsername(request);
+        playlist.setUsername(username);
+        playlist.setCreated(now);
+        playlist.setChanged(now);
+        playlist.setShared(false);
+
+        ResourceBundle bundle = ResourceBundle.getBundle("net.sourceforge.subsonic.i18n.ResourceBundle", locale);
+        playlist.setName(bundle.getString("top.starred") + " " + dateFormat.format(now));
+
+        playlistService.createPlaylist(playlist);
+        List<MediaFile> songs = mediaFileDao.getStarredFiles(0, Integer.MAX_VALUE, username);
+        playlistService.setFilesInPlaylist(playlist.getId(), songs);
     }
 
     public void appendToPlaylist(int playlistId, List<Integer> mediaFileIds) {
@@ -111,15 +151,14 @@ public class PlaylistService {
     private List<PlaylistInfo.Entry> createEntries(List<MediaFile> files) {
         List<PlaylistInfo.Entry> result = new ArrayList<PlaylistInfo.Entry>();
         for (MediaFile file : files) {
-			result.add(new PlaylistInfo.Entry(file.getId(), file.getTitle(),
-					file.getArtist(), file.getAlbumName(), file
-							.getDurationString(), file.getRating()));
+            result.add(new PlaylistInfo.Entry(file.getId(), file.getTitle(), file.getArtist(), file.getAlbumName(),
+                    file.getDurationString(),  file.getRating()));
         }
 
         return result;
     }
 
-	public PlaylistInfo toggleStar(int id, int index, int rating) {
+    public PlaylistInfo toggleStar(int id, int index, int rating) {
         List<MediaFile> files = playlistService.getFilesInPlaylist(id);
         MediaFile file = files.get(index);
 
@@ -161,18 +200,16 @@ public class PlaylistService {
         playlistService.deletePlaylist(id);
     }
 
-	public PlaylistInfo updatePlaylist(int id, String name, String comment,
-			boolean isPublic) {
+    public PlaylistInfo updatePlaylist(int id, String name, String comment, boolean shared) {
         Playlist playlist = playlistService.getPlaylist(id);
         playlist.setName(name);
         playlist.setComment(comment);
-        playlist.setPublic(isPublic);
+        playlist.setShared(shared);
         playlistService.updatePlaylist(playlist);
         return getPlaylist(id);
     }
 
-	public void setPlaylistService(
-			net.sourceforge.subsonic.service.PlaylistService playlistService) {
+    public void setPlaylistService(net.sourceforge.subsonic.service.PlaylistService playlistService) {
         this.playlistService = playlistService;
     }
 
@@ -192,7 +229,11 @@ public class PlaylistService {
         this.settingsService = settingsService;
     }
 
-	public void setMediaFileMemoryCache(Ehcache mediaFileMemoryCache) {
-		this.mediaFileMemoryCache = mediaFileMemoryCache;
-	}
+    public void setPlayerService(PlayerService playerService) {
+        this.playerService = playerService;
+    }
+
+    public void setLocaleResolver(SubsonicLocaleResolver localeResolver) {
+        this.localeResolver = localeResolver;
+    }
 }
