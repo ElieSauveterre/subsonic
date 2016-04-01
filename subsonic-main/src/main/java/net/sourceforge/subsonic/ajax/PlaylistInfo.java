@@ -52,16 +52,17 @@ public class PlaylistInfo {
         private final String artist;
         private final String album;
         private final String durationAsString;
+        private final boolean present;
 		private final int rating;
 
-		public Entry(int id, String title, String artist, String album,
-				String durationAsString, int rating) {
+        public Entry(int id, String title, String artist, String album, String durationAsString, int rating, boolean present) {
             this.id = id;
             this.title = title;
             this.artist = artist;
             this.album = album;
             this.durationAsString = durationAsString;
-			this.rating = rating;
+            this.rating = rating;
+            this.present = present;
         }
 
         public int getId() {
@@ -86,6 +87,10 @@ public class PlaylistInfo {
 
 		public int getRating() {
 			return rating;
+        }
+
+        public boolean isPresent() {
+            return present;
         }
     }
 }

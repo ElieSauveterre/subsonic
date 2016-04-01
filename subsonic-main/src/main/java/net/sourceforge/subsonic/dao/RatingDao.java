@@ -18,14 +18,15 @@
  */
 package net.sourceforge.subsonic.dao;
 
-import static net.sourceforge.subsonic.domain.MediaFile.MediaType.ALBUM;
-
 import java.util.ArrayList;
 import java.util.List;
 
-import net.sourceforge.subsonic.domain.MediaFile;
-
 import org.springframework.dao.EmptyResultDataAccessException;
+
+import net.sourceforge.subsonic.domain.MediaFile;
+import net.sourceforge.subsonic.domain.MusicFolder;
+
+import static net.sourceforge.subsonic.domain.MediaFile.MediaType.ALBUM;
 
 /**
  * Provides database services for ratings.
@@ -37,13 +38,12 @@ public class RatingDao extends AbstractDao {
     /**
      * Returns paths for the highest rated albums.
      *
-	 * @param offset
-	 *            Number of albums to skip.
-	 * @param count
-	 *            Maximum number of albums to return.
+     * @param offset      Number of albums to skip.
+     * @param count       Maximum number of albums to return.
+     * @param mediaFolder Only return albums in this media folder.
      * @return Paths for the highest rated albums.
      */
-    public List<String> getHighestRatedAlbums(int offset, int count) {
+    public List<String> getHighestRatedAlbums(int offset, int count, MusicFolder mediaFolder) {
         if (count < 1) {
             return new ArrayList<String>();
         }
@@ -57,40 +57,30 @@ public class RatingDao extends AbstractDao {
     /**
      * Sets the rating for a media file and a given user.
      *
-	 * @param username
-	 *            The user name.
-	 * @param mediaFile
-	 *            The media file.
-	 * @param rating
-	 *            The rating between 1 and 5, or <code>null</code> to remove the
-	 *            rating.
+     * @param username  The user name.
+     * @param mediaFile The media file.
+     * @param rating    The rating between 1 and 5, or <code>null</code> to remove the rating.
      */
-	public void setRatingForUser(String username, MediaFile mediaFile,
-			Integer rating) {
+    public void setRatingForUser(String username, MediaFile mediaFile, Integer rating) {
         if (rating != null && (rating < 1 || rating > 5)) {
             return;
         }
 
-		update("delete from user_rating where username=? and path=?", username,
-				mediaFile.getPath());
+        update("delete from user_rating where username=? and path=?", username, mediaFile.getPath());
         if (rating != null) {
-			update("insert into user_rating values(?, ?, ?)", username,
-					mediaFile.getPath(), rating);
+            update("insert into user_rating values(?, ?, ?)", username, mediaFile.getPath(), rating);
         }
     }
 
     /**
      * Returns the average rating for the given media file.
      *
-	 * @param mediaFile
-	 *            The media file.
+     * @param mediaFile The media file.
      * @return The average rating, or <code>null</code> if no ratings are set.
      */
     public Double getAverageRating(MediaFile mediaFile) {
         try {
-			return (Double) getJdbcTemplate().queryForObject(
-					"select avg(rating) from user_rating where path=?",
-					new Object[] { mediaFile.getPath() }, Double.class);
+            return (Double) getJdbcTemplate().queryForObject("select avg(rating) from user_rating where path=?", new Object[]{mediaFile.getPath()}, Double.class);
         } catch (EmptyResultDataAccessException x) {
             return null;
         }
@@ -99,18 +89,13 @@ public class RatingDao extends AbstractDao {
     /**
      * Returns the rating for the given user and media file.
      *
-	 * @param username
-	 *            The user name.
-	 * @param mediaFile
-	 *            The media file.
+     * @param username  The user name.
+     * @param mediaFile The media file.
      * @return The rating, or <code>null</code> if no rating is set.
      */
     public Integer getRatingForUser(String username, MediaFile mediaFile) {
         try {
-			return getJdbcTemplate()
-					.queryForInt(
-							"select rating from user_rating where username=? and path=?",
-							new Object[] { username, mediaFile.getPath() });
+            return getJdbcTemplate().queryForInt("select rating from user_rating where username=? and path=?", new Object[]{username, mediaFile.getPath()});
         } catch (EmptyResultDataAccessException x) {
             return null;
         }

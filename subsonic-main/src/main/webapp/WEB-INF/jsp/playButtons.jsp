@@ -14,7 +14,7 @@ PARAMETERS
 --%>
 
 <c:if test="${param.starEnabled}">
-    <c:if test="${param.asTable}"><td></c:if>
+    <c:if test="${param.asTable}"><td class="fit"></c:if>
 
     <c:forEach begin="1" end="${param.rating}" var="rate">
     	<a href="#" onclick="toggleStar(${param.id}, '#starImage${param.id}', ${rate}); return false;">
@@ -31,51 +31,48 @@ PARAMETERS
     <c:if test="${param.asTable}"></td></c:if>
 </c:if>
 
-<c:if test="${param.asTable}"><td></c:if>
+<c:if test="${param.asTable}"><td class="fit"></c:if>
 <c:if test="${empty param.playEnabled or param.playEnabled}">
     <c:choose>
         <c:when test="${param.video}">
             <sub:url value="/videoPlayer.view" var="videoUrl">
                 <sub:param name="id" value="${param.id}"/>
             </sub:url>
-            <%-- Open video in new window if Chromecast is already initialized in play queue. --%>
-            <a href="#" onclick="window.open('${videoUrl}', top.playQueue.CastPlayer.receiverFound ? '_blank' : 'main'); return false;">
+            <a href="${videoUrl}" target="main">
                 <img src="<spring:theme code="playImage"/>" alt="<fmt:message key="common.play"/>"
-                     style="padding-right: 0.1em" title="<fmt:message key="common.play"/>">
-            </a>
+                     title="<fmt:message key="common.play"/>"></a>
         </c:when>
         <c:otherwise>
-            <a href="#" onclick="top.playQueue.onPlay(${param.id}); return false;">
-                <img src="<spring:theme code="playImage"/>" alt="<fmt:message key="common.play"/>" style="padding-right: 0.1em"
-                     title="<fmt:message key="common.play"/>"></a>
+            <img src="<spring:theme code="playImage"/>" alt="<fmt:message key="common.play"/>" style="cursor:pointer"
+                 onclick="top.playQueue.onPlay(${param.id}); return false;" title="<fmt:message key="common.play"/>">
         </c:otherwise>
     </c:choose>
 </c:if>
 <c:if test="${param.asTable}"></td></c:if>
 
-<c:if test="${param.asTable}"><td></c:if>
+<c:if test="${param.asTable}"><td class="fit"></c:if>
 <c:if test="${(empty param.addEnabled or param.addEnabled) and not param.video}">
-    <a href="#" onclick="top.playQueue.onAdd(${param.id}); return false;">
-        <img id="add${param.id}" src="<spring:theme code="addImage"/>" alt="<fmt:message key="main.addlast"/>" style="padding-right: 0.1em"
-             title="<fmt:message key="main.addlast"/>"></a>
+    <img id="add${param.id}" src="<spring:theme code="addImage"/>" alt="<fmt:message key="main.addlast"/>"
+         onclick="top.playQueue.onAdd(${param.id}); $().toastmessage('showSuccessToast', '<fmt:message key="main.addlast.toast"/>'); return false;"
+         style="cursor:pointer" title="<fmt:message key="main.addlast"/>">
 </c:if>
 <c:if test="${param.asTable}"></td></c:if>
 
-<c:if test="${param.asTable}"><td></c:if>
+<c:if test="${param.asTable}"><td class="fit"></c:if>
 <c:if test="${(empty param.addEnabled or param.addEnabled) and not param.video}">
-    <a href="#" onclick="top.playQueue.onAddNext(${param.id}); return false;">
-        <img id="add${param.id}" src="<spring:theme code="addNextImage"/>" alt="<fmt:message key="main.addnext"/>" style="padding-right: 0.1em"
-             title="<fmt:message key="main.addnext"/>"></a>
+    <img id="add${param.id}" src="<spring:theme code="addNextImage"/>" alt="<fmt:message key="main.addnext"/>"
+         onclick="top.playQueue.onAddNext(${param.id}); $().toastmessage('showSuccessToast', '<fmt:message key="main.addnext.toast"/>'); return false;"
+         style="cursor:pointer" title="<fmt:message key="main.addnext"/>">
 </c:if>
 <c:if test="${param.asTable}"></td></c:if>
 
-<c:if test="${param.asTable}"><td></c:if>
+<c:if test="${param.asTable}"><td class="fit"></c:if>
 <c:if test="${param.downloadEnabled}">
     <sub:url value="/download.view" var="downloadUrl">
         <sub:param name="id" value="${param.id}"/>
     </sub:url>
     <a href="${downloadUrl}">
-        <img src="<spring:theme code="downloadImage"/>" alt="<fmt:message key="common.download"/>" style="padding-right: 0.1em"
+        <img src="<spring:theme code="downloadImage"/>" alt="<fmt:message key="common.download"/>"
              title="<fmt:message key="common.download"/>" ></a>
 </c:if>
 <c:if test="${param.asTable}"></td></c:if>

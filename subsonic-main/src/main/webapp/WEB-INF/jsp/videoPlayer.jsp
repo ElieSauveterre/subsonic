@@ -5,9 +5,24 @@
     <%@ include file="head.jsp" %>
     <%@ include file="jquery.jsp" %>
     <link rel="stylesheet" type="text/css" href="<c:url value="/style/videoPlayer.css"/>">
+    <script type="text/javascript" src="<c:url value="/dwr/engine.js"/>"></script>
+    <script type="text/javascript" src="<c:url value="/dwr/interface/starService.js"/>"></script>
     <script type="text/javascript" src="<c:url value="/script/jwplayer-5.10.min.js"/>"></script>
     <script type="text/javascript" src="<c:url value="/script/cast_sender-v1.js"/>"></script>
     <%@ include file="videoPlayerCast.jsp" %>
+
+    <script type="text/javascript" language="javascript">
+        function toggleStar(mediaFileId, imageId) {
+            if ($(imageId).attr("src").indexOf("<spring:theme code="ratingOnImage"/>") != -1) {
+                $(imageId).attr("src", "<spring:theme code="ratingOffImage"/>");
+                starService.unstar(mediaFileId);
+            }
+            else if ($(imageId).attr("src").indexOf("<spring:theme code="ratingOffImage"/>") != -1) {
+                $(imageId).attr("src", "<spring:theme code="ratingOnImage"/>");
+                starService.star(mediaFileId);
+            }
+        }
+    </script>
 </head>
 
 <body class="mainframe bgcolor1" style="padding-bottom:0.5em">
@@ -42,6 +57,8 @@
                     </c:choose>
                 </c:forEach>
             </select>
+            <div id="share"></div>
+            <div id="download"></div>
             <div id="casticonactive"></div>
             <div id="casticonidle"></div>
         </div>
@@ -53,17 +70,16 @@
     </script>
 </c:if>
 
-<h1 style="padding-top: 1em; padding-bottom: 0.5em">${model.video.title}</h1>
+<h1 style="padding-top:1em;padding-bottom:0.5em;">
+    <img id="starImage" src="<spring:theme code="${not empty model.video.starredDate ? 'ratingOnImage' : 'ratingOffImage'}"/>"
+         onclick="toggleStar(${model.video.id}, '#starImage'); return false;" style="cursor:pointer" alt="">
+    <span style="vertical-align:middle">${fn:escapeXml(model.video.title)}</span>
+</h1>
 
 <sub:url value="main.view" var="backUrl"><sub:param name="id" value="${model.video.id}"/></sub:url>
 
-<div id="back" class="back" style="float:left;padding-right:2em"><a href="${backUrl}"><fmt:message key="common.back"/></a></div>
+<div class="back" style="float:left;padding-right:2em"><a href="${backUrl}"><fmt:message key="common.back"/></a></div>
 <div style="clear: both"></div>
-
-<script type="text/javascript">
-    var showBackButton = top.playQueue != null && !top.playQueue.CastPlayer.receiverFound;
-    $("#back").toggle(showBackButton);
-</script>
 
 </body>
 </html>
