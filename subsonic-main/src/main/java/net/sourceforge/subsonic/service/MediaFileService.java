@@ -40,6 +40,9 @@ import java.util.TreeSet;
 
 import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.lang.StringUtils;
+import org.jaudiotagger.audio.AudioFile;
+import org.jaudiotagger.audio.AudioFileIO;
+import org.jaudiotagger.tag.Tag;
 
 import net.sf.ehcache.Ehcache;
 import net.sf.ehcache.Element;

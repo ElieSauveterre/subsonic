@@ -399,7 +399,7 @@ public class PlayQueueService {
             entries.add(new PlayQueueInfo.Entry(file.getId(), file.getTrackNumber(), file.getTitle(), file.getArtist(),
                     file.getAlbumName(), file.getGenre(), file.getYear(), formatBitRate(file),
                     file.getDurationSeconds(), file.getDurationString(), format, formatContentType(format),
-                    formatFileSize(file.getFileSize(), locale), starred, albumUrl, streamUrl));
+                    formatFileSize(file.getFileSize(), locale), starred, albumUrl, streamUrl, file.getRating()));
         }
         boolean isStopEnabled = playQueue.getStatus() == PlayQueue.Status.PLAYING && !player.isExternalWithPlaylist();
         float gain = jukeboxService.getGain();

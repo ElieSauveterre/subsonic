@@ -30,12 +30,19 @@ import java.sql.SQLException;
 import java.util.Date;
 import java.util.List;
 
+import org.jaudiotagger.audio.AudioFile;
+import org.jaudiotagger.audio.AudioFileIO;
+import org.jaudiotagger.tag.Tag;
+import org.jaudiotagger.tag.TagField;
+import org.jaudiotagger.tag.id3.ID3v23Frame;
+import org.jaudiotagger.tag.id3.framebody.FrameBodyPOPM;
 import org.springframework.jdbc.core.RowMapper;
 import org.springframework.jdbc.core.simple.ParameterizedRowMapper;
 
 import net.sourceforge.subsonic.Logger;
 import net.sourceforge.subsonic.domain.Genre;
 import net.sourceforge.subsonic.domain.MediaFile;
+import net.sourceforge.subsonic.util.RatingUtil;
 
 import static net.sourceforge.subsonic.domain.MediaFile.MediaType;
 import static net.sourceforge.subsonic.domain.MediaFile.MediaType.*;
