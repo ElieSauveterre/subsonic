@@ -17,6 +17,51 @@
         <div id="main-col">
             <h1 class="bottomspace">Subsonic Change Log</h1>
 
+            <a name="5.0"><h2 class="div">Subsonic 5.0 - Sep 21, 2014</h2></a>
+            <ul>
+                <li><span class="bugid">Bugfix: </span>Use UTF-8 encoding for filenames in ZIP archives. (Requires Java 7+)</li>
+                <li><span class="bugid">Bugfix: </span>Fixed problem with unresponsive dialogs in web interface.</li>
+                <li><span class="bugid">Bugfix: </span>Use 2000 kbps as default video bitrate.</li>
+                <li><span class="bugid">Bugfix: </span>Sort playlists alphabetically.</li>
+                <li><span class="bugid">Bugfix: </span>Fixed some sorting issues (e.g., for same artist found in multiple media folders).</li>
+                <li><span class="bugid">Bugfix: </span>Open video player in new window to work around Chromecast error.</li>
+                <li><span class="bugid">Bugfix: </span>Make password recovery work with https.</li>
+            </ul>
+
+            <a name="5.0.beta2"><h2 class="div">Subsonic 5.0.beta2 - Aug 26, 2014</h2></a>
+            <ul>
+                <li><span class="bugid">New: </span>Support casting to remote Chromecasts (requires *.subsonic.org address)</li>
+                <li><span class="bugid">New: </span>Added video bitrate selector.</li>
+                <li><span class="bugid">New: </span>Make DLNA media server name configurable.</li>
+                <li><span class="bugid">New: </span>Updated Czech translation, courtesy of Trottel.</li>
+                <li><span class="bugid">New: </span>Enable compression for XML, JSON and JSONP in the REST API</li>
+                <li><span class="bugid">New: </span>Set X-Content-Duration to support opus encoding.</li>
+                <li><span class="bugid">Bugfix: </span>Fixed problem with whole tab being sent to Chromecast rather than just the video.</li>
+                <li><span class="bugid">Bugfix: </span>Access-Control-Allow-Origin header sometimes missing in REST responses.</li>
+                <li><span class="bugid">Bugfix: </span>Fixed DLNA recursion bug.</li>
+                <li><span class="bugid">Bugfix: </span>Fixed mixed content errors when changing cover art, and using https (courtesy of daneren2005)</li>
+                <li><span class="bugid">Bugfix: </span>Fixed errors on certain podcast feeds where they were being incorrectly labeled as video files (courtesy of daneren2005)</li>
+                <li><span class="bugid">Bugfix: </span>Updated ffmpeg commands to fix some transcoding issues.</li>
+                <li><span class="bugid">Bugfix: </span>Fixed bug in REST method changePassword</li>
+                <li><span class="bugid">Bugfix: </span>Avoid creating duplicate players when switching from Chromecast to local.</li>
+            </ul>
+
+            <a name="5.0.beta1"><h2 class="div">Subsonic 5.0.beta1 - May 24, 2014</h2></a>
+            <ul>
+                <li><span class="bugid">New: </span>Chromecast support.</li>
+                <li><span class="bugid">New: </span>Added play overlay button in cover art images.</li>
+                <li><span class="bugid">New: </span>Added browser notification.</li>
+                <li><span class="bugid">New: </span>Nicer scrollbar (in Webkit browsers).</li>
+                <li><span class="bugid">New: </span>Nicer styling of input fields and buttons.</li>
+                <li><span class="bugid">New: </span>Nicer icons.</li>
+                <li><span class="bugid">New: </span>Added Estonian translation, courtesy of Olav M&auml;gi.</li>
+                <li><span class="bugid">New: </span>Added Korean translation, courtesy of Rhetor Choi.</li>
+                <li><span class="bugid">New: </span>Added link to Jamstash.</li>
+                <li><span class="bugid">Bugfix: </span>Fixed broken Mac installer.</li>
+                <li><span class="bugid">Bugfix: </span>External player doesn't auto-advance.</li>
+                <li><span class="bugid">Bugfix: </span>Improved support for https in UPnP.</li>
+            </ul>
+
             <a name="4.9"><h2 class="div">Subsonic 4.9 - Jan 25, 2014</h2></a>
             <ul>
                 <li><span class="bugid">New: </span>Rename "Download" to "Download all"</li>
@@ -152,6 +197,9 @@
             <div class="sidebox">
                 <h2>Releases</h2>
                 <ul class="list">
+                    <li><a href="#5.0">Subsonic 5.0</a></li>
+                    <li><a href="#5.0.beta2">Subsonic 5.0.beta2</a></li>
+                    <li><a href="#5.0.beta1">Subsonic 5.0.beta1</a></li>
                     <li><a href="#4.9">Subsonic 4.9</a></li>
                     <li><a href="#4.9.beta4">Subsonic 4.9.beta4</a></li>
                     <li><a href="#4.9.beta3">Subsonic 4.9.beta3</a></li>

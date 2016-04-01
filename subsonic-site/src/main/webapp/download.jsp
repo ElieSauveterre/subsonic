@@ -3,7 +3,7 @@
 <html xmlns="http://www.w3.org/1999/xhtml">
 
 <%!
-    String stable = "4.9";
+    String stable = "5.0";
     String beta = null; // Set to null if no beta is available.
 %>
 <%@ include file="header.jsp" %>

@@ -94,13 +94,14 @@ public class PlayQueueInfo {
         private final boolean starred;
         private final String albumUrl;
         private final String streamUrl;
+        private final String remoteStreamUrl;
+        private final String coverArtUrl;
+        private final String remoteCoverArtUrl;
 		private final int rating;
 
-		public Entry(int id, Integer trackNumber, String title, String artist,
-				String album, String genre, Integer year, String bitRate,
-				Integer duration, String durationAsString, String format,
-				String contentType, String fileSize, boolean starred,
-				String albumUrl, String streamUrl, int rating) {
+        public Entry(int id, Integer trackNumber, String title, String artist, String album, String genre, Integer year,
+                String bitRate, Integer duration, String durationAsString, String format, String contentType, String fileSize,
+                boolean starred, String albumUrl, String streamUrl, String remoteStreamUrl, String coverArtUrl, String remoteCoverArtUrl, int rating) {
             this.id = id;
             this.trackNumber = trackNumber;
             this.title = title;
@@ -117,8 +118,11 @@ public class PlayQueueInfo {
             this.starred = starred;
             this.albumUrl = albumUrl;
             this.streamUrl = streamUrl;
+            this.remoteStreamUrl = remoteStreamUrl;
+            this.coverArtUrl = coverArtUrl;
+            this.remoteCoverArtUrl = remoteCoverArtUrl;
 			this.rating = rating;
-		}
+        }
 
 		public int getRating() {
 			return rating;
@@ -187,6 +191,17 @@ public class PlayQueueInfo {
         public String getStreamUrl() {
             return streamUrl;
         }
-    }
 
+        public String getRemoteStreamUrl() {
+            return remoteStreamUrl;
+        }
+
+        public String getCoverArtUrl() {
+            return coverArtUrl;
+        }
+
+        public String getRemoteCoverArtUrl() {
+            return remoteCoverArtUrl;
+        }
+    }
 }

@@ -21,19 +21,19 @@ package net.sourceforge.subsonic.controller;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import net.sf.ehcache.Ehcache;
-import net.sf.ehcache.Element;
-import net.sourceforge.subsonic.dao.MediaFileDao;
-import net.sourceforge.subsonic.domain.MediaFile;
-import net.sourceforge.subsonic.filter.ParameterDecodingFilter;
-import net.sourceforge.subsonic.service.MediaFileService;
-import net.sourceforge.subsonic.util.StringUtil;
-
 import org.springframework.web.bind.ServletRequestUtils;
 import org.springframework.web.servlet.ModelAndView;
 import org.springframework.web.servlet.mvc.AbstractController;
 import org.springframework.web.servlet.view.RedirectView;
-
+import net.sf.ehcache.Ehcache;
+import net.sf.ehcache.Element;
+import net.sourceforge.subsonic.domain.MediaFile;
+import net.sourceforge.subsonic.service.MediaFileService;
+import net.sourceforge.subsonic.service.RatingService;
+import net.sourceforge.subsonic.service.SecurityService;
+import net.sourceforge.subsonic.dao.MediaFileDao;
+import net.sourceforge.subsonic.filter.ParameterDecodingFilter;
+import net.sourceforge.subsonic.util.StringUtil;
 /**
  * Controller for updating music file ratings.
  *
@@ -41,28 +41,35 @@ import org.springframework.web.servlet.view.RedirectView;
  */
 public class SetRatingController extends AbstractController {
 
+    private RatingService ratingService;
+    private SecurityService securityService;
     private MediaFileService mediaFileService;
 
-	private MediaFileDao mediaFileDao;
-	private Ehcache mediaFileMemoryCache;
-
-	protected ModelAndView handleRequestInternal(HttpServletRequest request,
-			HttpServletResponse response) throws Exception {
-        String path = request.getParameter("path");
+    protected ModelAndView handleRequestInternal(HttpServletRequest request, HttpServletResponse response) throws Exception {
+        int id = ServletRequestUtils.getRequiredIntParameter(request, "id");
         Integer rating = ServletRequestUtils.getIntParameter(request, "rating");
+        if (rating == 0) {
+            rating = null;
+        }
 
         MediaFile mediaFile = mediaFileService.getMediaFile(path);
 		mediaFileDao.starMediaFile(mediaFile.getId(), rating);
 		mediaFile.setRating(rating);
 		mediaFileMemoryCache.put(new Element(mediaFile.getFile(), mediaFile));
 
-		String url = "main.view?path" + ParameterDecodingFilter.PARAM_SUFFIX
-				+ "=" + StringUtil.utf8HexEncode(path);
-        return new ModelAndView(new RedirectView(url));
+        return new ModelAndView(new RedirectView("main.view?id=" + id));
     }
 
-	public void setMediaFileService(MediaFileService mediaFileService) {
-		this.mediaFileService = mediaFileService;
+    public void setRatingService(RatingService ratingService) {
+        this.ratingService = ratingService;
+    }
+
+    public void setSecurityService(SecurityService securityService) {
+        this.securityService = securityService;
+    }
+
+    public void setMediaFileService(MediaFileService mediaFileService) {
+        this.mediaFileService = mediaFileService;
     }
 
 	public void setMediaFileDao(MediaFileDao mediaFileDao) {

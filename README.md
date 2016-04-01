@@ -22,32 +22,32 @@ About
 
 Subsonic is developed by [Sindre Mehus](mailto:sindre@activeobjects.no). He lives in Oslo, Norway and works as a Java software consultant.
 
-This repository is maintained by [K and H Research Company](https://khresear.ch) and provides an unofficial version of Subsonic which does not contain the Licensing code checks present in the official builds. In addition, some minor changes to the repository have been made to assist in the building of a fully-free version for your own use. Any downloads associated with this repo are provided without warranty or guarantee, and your use of such files is at your own risk.
+This repository is maintained by [Eugene E. Kashpureff Jr](mailto:eugene@kashpureff.org) and provides an unofficial version of Subsonic which does not contain the Licensing code checks present in the official builds. In addition, some minor changes to the repository have been made to assist in the building of a fully-free version for your own use. Any downloads associated with this repo are provided without warranty or guarantee, and your use of such files is at your own risk.
 
 The official homepage of Subsonic can be found [here](http://www.subsonic.org/).
 
 Download
 --------
 
-A WAR of the latest tag is provided on the [Releases page](https://github.com/KHresearch/subsonic/releases), which can be installed to a Tomcat webapps/ directory, and should "just work". If you wish, you can build Subsonic from these sources for yourself by playing along with the following instructions.
+A WAR of the latest tag is provided on the [Releases page](https://github.com/EugeneKay/subsonic/releases), which can be installed to a Tomcat webapps/ directory, and should "just work". If you wish, you can build Subsonic from these sources for yourself by playing along with the following instructions.
 
 Building
 --------
 
-First, make sure you have a relatively recent version of [Maven](http://maven.apache.org/) and a JDK. The 1.6.x series of OpenJDK and the official Oracle JDK(Java 6) have both been tested to work. Ensure that `mvn` can be found in one of the directories listed in your $PATH and that $JAVA_HOME is set to your JDK:
+First, make sure you have a relatively recent version of [Maven](http://maven.apache.org/) and a JDK. The 1.6.x and 1.7.x series of OpenJDK and the official Oracle JDK(Java 6 and Java 7) have been tested to work. Ensure that `mvn` can be found in one of the directories listed in your $PATH and that $JAVA_HOME is set to your JDK:
 
 ```
 $ which mvn
 /usr/local/bin/mvn
 $ echo $JAVA_HOME
-/usr/lib/jvm/java-1.6.0-openjdk.x86_64
+/usr/lib/jvm/java-1.7.0-openjdk.x86_64
 $
 ```
 
 Now you can clone a copy of this repository and switch to the `release` branch if it is not automatically checked out:
 
 ```
-$ git clone git://github.com/KHresearch/subsonic.git
+$ git clone git://github.com/EugeneKay/subsonic.git
 $ cd subsonic
 $ git checkout release
 $
