@@ -117,7 +117,7 @@ public class PlayQueueInfo {
 
         public Entry(int id, Integer trackNumber, String title, String artist, String album, String genre, Integer year,
                 String bitRate, Integer duration, String durationAsString, String format, String contentType, String fileSize,
-                boolean starred, String albumUrl, String streamUrl, String remoteStreamUrl, String coverArtUrl, String remoteCoverArtUrl) {
+                boolean starred, String albumUrl, String streamUrl, String remoteStreamUrl, String coverArtUrl, String remoteCoverArtUrl,  int rating) {
             this.id = id;
             this.trackNumber = trackNumber;
             this.title = title;

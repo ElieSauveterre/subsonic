@@ -85,9 +85,6 @@ public class PlaylistInfo {
             return durationAsString;
         }
 
-        public boolean isStarred() {
-            return starred;
-        }
 		public int getRating() {
 			return rating;
         }

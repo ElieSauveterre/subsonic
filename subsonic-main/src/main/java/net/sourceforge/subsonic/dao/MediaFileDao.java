@@ -508,7 +508,7 @@ public class MediaFileDao extends AbstractDao {
 				AudioFile f = AudioFileIO.read(mediaFile.getFile());
 				Tag tag = f.getTag();
 
-				List<TagField> tagFields = tag.get("POPM");
+				List<TagField> tagFields = tag.getFields("POPM");
 
 				if (tagFields.isEmpty()) {
 
@@ -649,7 +649,8 @@ public class MediaFileDao extends AbstractDao {
                     rs.getTimestamp(27),
                     rs.getTimestamp(28),
                     rs.getBoolean(29),
-                    rs.getInt(30));
+                    rs.getInt(30),
+                    rs.getInt(31));
         }
     }
 

@@ -18,6 +18,8 @@
  */
 package net.sourceforge.subsonic.ajax;
 
+import net.sf.ehcache.Ehcache;
+import net.sf.ehcache.Element;
 import net.sourceforge.subsonic.dao.MediaFileDao;
 import net.sourceforge.subsonic.domain.MediaFile;
 import net.sourceforge.subsonic.domain.MusicFolder;
@@ -55,6 +57,7 @@ public class PlaylistService {
     private SettingsService settingsService;
     private PlayerService playerService;
     private SubsonicLocaleResolver localeResolver;
+    private Ehcache mediaFileMemoryCache;
 
     public List<Playlist> getReadablePlaylists() {
         HttpServletRequest request = WebContextFactory.get().getHttpServletRequest();
@@ -177,9 +180,9 @@ public class PlaylistService {
         List<MediaFile> files = playlistService.getFilesInPlaylist(id, true);
         MediaFile file = files.get(index);
 
-       mediaFileDao.starMediaFile(file.getId(), rating);
-		file.setRating(rating);
-		mediaFileMemoryCache.put(new Element(file.getFile(), file));
+        mediaFileDao.starMediaFile(file.getId(), rating);
+        file.setRating(rating);
+        mediaFileMemoryCache.put(new Element(file.getFile(), file));
         return getPlaylist(id);
     }
 
