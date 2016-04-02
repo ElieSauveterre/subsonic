@@ -157,7 +157,7 @@ public class PlaylistService {
         List<PlaylistInfo.Entry> result = new ArrayList<PlaylistInfo.Entry>();
         for (MediaFile file : files) {
             result.add(new PlaylistInfo.Entry(file.getId(), file.getTitle(), file.getArtist(), file.getAlbumName(),
-                    file.getDurationString(),  file.getRating()));
+                    file.getDurationString(),  file.getRating() ,true));
         }
 
         return result;

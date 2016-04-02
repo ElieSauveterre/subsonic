@@ -35,6 +35,7 @@ import org.springframework.jdbc.core.simple.ParameterizedRowMapper;
 import net.sourceforge.subsonic.domain.Genre;
 import net.sourceforge.subsonic.domain.MediaFile;
 import net.sourceforge.subsonic.domain.MusicFolder;
+import net.sourceforge.subsonic.util.RatingUtil;
 
 import static net.sourceforge.subsonic.domain.MediaFile.MediaType;
 import static net.sourceforge.subsonic.domain.MediaFile.MediaType.*;
@@ -354,7 +355,7 @@ public class MediaFileDao extends AbstractDao {
 				AudioFile f = AudioFileIO.read(mediaFile.getFile());
 				Tag tag = f.getTag();
 
-				List<TagField> tagFields = tag.get("POPM");
+				List<TagField> tagFields = tag.getFields("POPM");
 
 				if (tagFields.isEmpty()) {
 

@@ -44,10 +44,14 @@ public class SetRatingController extends AbstractController {
     private RatingService ratingService;
     private SecurityService securityService;
     private MediaFileService mediaFileService;
+    private MediaFileDao mediaFileDao;
+    private Ehcache mediaFileMemoryCache;
 
     protected ModelAndView handleRequestInternal(HttpServletRequest request, HttpServletResponse response) throws Exception {
         int id = ServletRequestUtils.getRequiredIntParameter(request, "id");
         Integer rating = ServletRequestUtils.getIntParameter(request, "rating");
+        String path = request.getParameter("path");
+        
         if (rating == 0) {
             rating = null;
         }
